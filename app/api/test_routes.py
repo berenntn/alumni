@@ -33,7 +33,7 @@ async def get_hello_name(
 
 
 @test_router.get(
-    "/sum/{number1}/{number2}",
+    "/sum/{a}/{b}",
     response_model=SumResponse,
     summary="Sum Calculation",
     description="Calculates and returns the sum of two numbers using the service layer.",
@@ -44,8 +44,8 @@ async def get_sum(
 ) -> SumResponse:
     """Calculates the sum of two numbers and returns the structured result."""
     # Convert whole numbers to int for cleaner output presentation
-    n1 = int(number1) if number1.is_integer() else number1
-    n2 = int(number2) if number2.is_integer() else number2
+    n1 = int(a) if a.is_integer() else a
+    n2 = int(b) if b.is_integer() else b
 
     calculated_result = CalculatorService.add(n1, n2)
 
