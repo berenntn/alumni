@@ -138,7 +138,7 @@ alumni-tracking-system/
 | `GET` | `/redoc` | HTML | ReDoc API Dokümantasyonu | ReDoc Arayüzü |
 | `GET` | `/hello` | JSON | Genel selamlama mesajı | `{"message": "Hello, World!"}` |
 | `GET` | `/hello/{name}` | JSON | İsme özel kişiselleştirilmiş selamlama | `{"message": "Hello, Ahmet!"}` |
-| `GET` | `/sum/{n1}/{n2}`| JSON | İki sayının toplamını hesaplar | `{"number1": 15, "number2": 27, "operation": "sum", "result": 42}` |
+| `GET` | `/sum/{a}/{b}`| JSON | İki sayının toplamını hesaplar | `{"number1": 15, "number2": 27, "operation": "sum", "result": 42}` |
 
 ---
 
