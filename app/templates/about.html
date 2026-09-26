@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Proje Hakkında | {{ app_title_tr }}{% endblock %}
+
+{% block content %}
+<!-- About Hero Section -->
+<section class="about-hero">
+  <div class="section-container">
+    <div class="badge-university" style="background-color: rgba(251, 191, 36, 0.2); color: #fef3c7; border-color: rgba(251, 191, 36, 0.4);">
+      <span class="badge-dot" style="background-color: #fbbf24;"></span>
+      Akademik Proje &bull; Web Programlama
+    </div>
+    <h1>{{ app_title_tr }}</h1>
+    <p>
+      Bu proje, İstanbul Üniversitesi Web Programlama dersi kapsamında modern yazılım mimarisi prensipleri ve en güncel web teknolojileri kullanılarak geliştirilmektedir.
+    </p>
+  </div>
+</section>
+
+<!-- Project Scope & Architecture Section -->
+<section class="section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-eyebrow">Yazılım Tasarımı</span>
+      <h2 class="section-title">Katmanlı Mimari (Layered Architecture)</h2>
+      <p class="section-subtitle">
+        Proje, gelecekteki aşamalarda veritabanı modelleri, kimlik doğrulama ve mezun iş akışlarının kolayca entegre edilebilmesi için katmanlı mimari yaklaşımıyla kurgulanmıştır.
+      </p>
+    </div>
+
+    <!-- Architecture Grid -->
+    <div class="architecture-grid">
+      <!-- Layer 1 -->
+      <div class="layer-card">
+        <span class="layer-number">01</span>
+        <h3 class="layer-title">Sunum & Arayüz Katmanı</h3>
+        <span class="layer-path">app/templates & app/static</span>
+        <p class="layer-desc">
+          Kullanıcı ile etkileşim kuran responsive HTML sayfaları (Jinja2) ve modern CSS/JS bileşenleri. Canlı API testi ve bilgilendirici paneller sunar.
+        </p>
+      </div>
+
+      <!-- Layer 2 -->
+      <div class="layer-card">
+        <span class="layer-number">02</span>
+        <h3 class="layer-title">API & Yönlendirme Katmanı</h3>
+        <span class="layer-path">app/api</span>
+        <p class="layer-desc">
+          HTTP isteklerini karşılayan, parametre ayrıştırması yapan ve ilgili servislere yönlendiren FastAPI router bileşenleri (Web ve Test rotaları).
+        </p>
+      </div>
+
+      <!-- Layer 3 -->
+      <div class="layer-card">
+        <span class="layer-number">03</span>
+        <h3 class="layer-title">İş Mantığı / Servis Katmanı</h3>
+        <span class="layer-path">app/services</span>
+        <p class="layer-desc">
+          İş kurallarını, algoritmaları ve veri manipülasyonunu kapsüller. API rotalarını saf iş mantığından izole tutar (ör. CalculatorService).
+        </p>
+      </div>
+
+      <!-- Layer 4 -->
+      <div class="layer-card">
+        <span class="layer-number">04</span>
+        <h3 class="layer-title">Şema & Doğrulama Katmanı</h3>
+        <span class="layer-path">app/schemas</span>
+        <p class="layer-desc">
+          Pydantic v2 modelleri ile gelen ve giden verinin tip güvenliğini, otomatik doğrulanmasını ve Swagger OpenAPI dökümantasyonunu sağlar.
+        </p>
+      </div>
+
+      <!-- Layer 5 -->
+      <div class="layer-card">
+        <span class="layer-number">05</span>
+        <h3 class="layer-title">Veri Erişimi & ORM Katmanı</h3>
+        <span class="layer-path">app/models & app/core/database.py</span>
+        <p class="layer-desc">
+          SQLAlchemy 2.0 deklaratif altyapısı ile PostgreSQL veritabanı modellerini ve oturum yönetimini (get_db dependency) yönetir.
+        </p>
+      </div>
+
+      <!-- Layer 6 -->
+      <div class="layer-card">
+        <span class="layer-number">06</span>
+        <h3 class="layer-title">Konfigürasyon Katmanı</h3>
+        <span class="layer-path">app/core/config.py</span>
+        <p class="layer-desc">
+          Ortam değişkenlerini (.env) güvenli biçimde okuyup uygulama çapında tip güvenli ayarlar sunan merkezi konfigürasyon yapısı.
+        </p>
+      </div>
+    </div>
+
+    <!-- Technology Matrix -->
+    <div style="margin-top: 4.5rem;">
+      <div class="section-header">
+        <span class="section-eyebrow">Teknoloji Yığını</span>
+        <h2 class="section-title">Kullanılan Standartlar & Kütüphaneler</h2>
+      </div>
+
+      <table class="tech-spec-table">
+        <thead>
+          <tr>
+            <th>Bileşen</th>
+            <th>Teknoloji</th>
+            <th>Kullanım Amacı</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Web Framework</strong></td>
+            <td>FastAPI + Uvicorn</td>
+            <td>Yüksek performanslı, asenkron ve otomatik OpenAPI/Swagger üreten Python framework'ü.</td>
+          </tr>
+          <tr>
+            <td><strong>Veritabanı</strong></td>
+            <td>PostgreSQL 16</td>
+            <td>İlişkisel mezun, bölüm, kariyer ve etkinlik verilerinin tutulacağı kurumsal veritabanı.</td>
+          </tr>
+          <tr>
+            <td><strong>ORM</strong></td>
+            <td>SQLAlchemy 2.0</td>
+            <td>Python nesneleri ile SQL tabloları arasında tip güvenli nesne-ilişkisel eşleme.</td>
+          </tr>
+          <tr>
+            <td><strong>Konteynerizasyon</strong></td>
+            <td>Docker & Docker Compose</td>
+            <td>Uygulama ve veritabanının herhangi bir ortamda tek komutla izole ve tekrarlanabilir çalışması.</td>
+          </tr>
+          <tr>
+            <td><strong>Şablon Motoru</strong></td>
+            <td>Jinja2</td>
+            <td>Sunucu tarafında dinamik, responsive ve modüler HTML arayüz üretimi.</td>
+          </tr>
+          <tr>
+            <td><strong>Veri Doğrulama</strong></td>
+            <td>Pydantic v2</td>
+            <td>Girdi/çıktı veri tiplerinin kontrolü, validasyon hatalarının standart JSON ile döndürülmesi.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Quick Navigation Back -->
+    <div style="text-align: center; margin-top: 3.5rem;">
+      <a href="/" class="btn btn-primary" style="margin-right: 0.75rem;">&larr; Ana Sayfaya Dön</a>
+      <a href="/docs" target="_blank" class="btn btn-accent">Swagger Dokümantasyonunu Aç &rarr;</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

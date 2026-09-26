@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # FastAPI Web Application
+  web:
+    build: .
+    container_name: alumni_web
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=Alumni Tracking System
+      - APP_ENV=development
+      - DEBUG=True
+      - DATABASE_URL=postgresql://alumni_user:alumni_password@db:5432/alumni_db
+      - POSTGRES_SERVER=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=alumni_user
+      - POSTGRES_PASSWORD=alumni_password
+      - POSTGRES_DB=alumni_db
+    volumes:
+      - ./app:/app/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # PostgreSQL Database (Prepared for Phase 2 Models)
+  db:
+    image: postgres:16-alpine
+    container_name: alumni_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: alumni_user
+      POSTGRES_PASSWORD: alumni_password
+      POSTGRES_DB: alumni_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alumni_user -d alumni_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

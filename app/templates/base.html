@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ app_title_tr }} | {{ app_name }}{% endblock %}</title>
+  <meta name="description" content="{{ app_description }}">
+  
+  <!-- Favicon / Brand Symbol (inline SVG) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f2744'/><text x='50%' y='65%' font-size='50' font-weight='bold' fill='%23fbbf24' text-anchor='middle'>İÜ</text></svg>">
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="/static/css/style.css">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand">
+        <div class="brand-emblem">İÜ</div>
+        <div class="brand-text">
+          <span class="brand-title">{{ app_title_tr }}</span>
+          <span class="brand-subtitle">{{ app_name }}</span>
+        </div>
+      </a>
+
+      <!-- Desktop & Mobile Navigation Links -->
+      <nav>
+        <ul class="nav-links" id="navLinks">
+          <li><a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">Ana Sayfa</a></li>
+          <li><a href="/about" class="nav-link {% if request.url.path == '/about' %}active{% endif %}">Hakkında</a></li>
+          <li><a href="/docs" target="_blank" rel="noopener noreferrer" class="nav-link">API Dokümantasyonu (Swagger)</a></li>
+          <li><a href="/redoc" target="_blank" rel="noopener noreferrer" class="nav-link">ReDoc</a></li>
+          <li><a href="/docs" class="nav-cta">API Docs &rarr;</a></li>
+        </ul>
+      </nav>
+
+      <!-- Mobile Hamburger Button -->
+      <button class="mobile-toggle" id="mobileToggle" aria-label="Menüyü Aç/Kapat">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Body Content -->
+  <main class="main-wrapper">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-brand">
+        <h4>{{ app_title_tr }}</h4>
+        <p>{{ app_description }}</p>
+      </div>
+
+      <div class="footer-column">
+        <h5>Hızlı Bağlantılar</h5>
+        <ul>
+          <li><a href="/">Ana Sayfa (Home)</a></li>
+          <li><a href="/about">Proje Hakkında (About)</a></li>
+          <li><a href="/docs">Swagger UI (/docs)</a></li>
+          <li><a href="/redoc">ReDoc (/redoc)</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-column">
+        <h5>Test Uç Noktaları</h5>
+        <ul>
+          <li><a href="/hello" target="_blank">GET /hello</a></li>
+          <li><a href="/hello/IstanbulUniversitesi" target="_blank">GET /hello/{name}</a></li>
+          <li><a href="/sum/15/27" target="_blank">GET /sum/{n1}/{n2}</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 İstanbul Üniversitesi Web Programlama Dersi. Tüm hakları saklıdır.</p>
+      <p>Geliştirici Mimarisi: FastAPI &bull; PostgreSQL &bull; SQLAlchemy &bull; Docker</p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/static/js/main.js"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

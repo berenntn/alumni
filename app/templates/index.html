@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+  <div class="hero-container">
+    <div class="hero-text-content">
+      <div class="badge-university">
+        <span class="badge-dot"></span>
+        İstanbul Üniversitesi &bull; Web Programlama Dersi
+      </div>
+
+      <h1 class="hero-title-tr">{{ app_title_tr }}</h1>
+      <h2 class="hero-title-en">{{ app_name }}</h2>
+
+      <p class="hero-description">
+        İstanbul Üniversitesi mezunları, mevcut öğrencileri ve akademik kadrosu arasındaki
+        köprüyü kuran yeni nesil bilgi ve kariyer takip ekosistemi. Mezun başarılarını takip edin,
+        sektör ağlarını genişletin ve mentorluk fırsatlarına kapı aralayın.
+      </p>
+
+      <div class="hero-actions">
+        <a href="/docs" target="_blank" class="btn btn-primary">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          FastAPI Swagger UI (/docs)
+        </a>
+        <a href="/about" class="btn btn-outline">
+          Proje Hakkında & Katmanlı Mimari
+        </a>
+        <a href="#api-sandbox" class="btn btn-accent">
+          Test Uç Noktalarını Dene
+        </a>
+      </div>
+    </div>
+
+    <!-- Hero Status Card -->
+    <div class="hero-card">
+      <div class="hero-card-header">
+        <span style="font-weight: 700; font-size: 0.95rem;">Sistem Durumu (Stage 1)</span>
+        <div class="card-status">
+          <span class="card-status-dot"></span>
+          Aktif &bull; Çevrimiçi
+        </div>
+      </div>
+      <div class="hero-card-body">
+        <div class="meta-grid">
+          <div class="meta-item">
+            <div class="meta-label">Mimari Model</div>
+            <div class="meta-value">Layered Architecture</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Backend Motoru</div>
+            <div class="meta-value">FastAPI + Uvicorn</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Veritabanı Hazırlığı</div>
+            <div class="meta-value">PostgreSQL + SQLAlchemy</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Konteyner Desteği</div>
+            <div class="meta-value">Docker Compose</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 1rem;">
+          <div class="meta-label" style="margin-bottom: 0.5rem;">Aktif Katmanlar</div>
+          <div class="tech-pills">
+            <span class="pill active-pill">Jinja2 Web Views</span>
+            <span class="pill active-pill">REST Controllers</span>
+            <span class="pill active-pill">Service Layer</span>
+            <span class="pill active-pill">Pydantic Schemas</span>
+            <span class="pill">SQLAlchemy Models (Stage 2)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-eyebrow">Temel Fonksiyonlar</span>
+      <h2 class="section-title">Mezun Takip Sistemi Ne Sağlar?</h2>
+      <p class="section-subtitle">
+        İstanbul Üniversitesi mezunlarının profesyonel yaşamdaki yolculuklarını destekleyen modern entegrasyonlar.
+      </p>
+    </div>
+
+    <div class="features-grid">
+      <!-- Feature 1 -->
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+        </div>
+        <h3>Mezun Ağı & İletişim</h3>
+        <p>
+          Farklı fakülte ve mezuniyet yıllarındaki mezunların birbirleriyle iletişim kurmasını, mezun buluşmalarını ve ortak proje iş birliklerini kolaylaştırır.
+        </p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <h3>Kariyer & İstihdam Takibi</h3>
+        <p>
+          Mezunların çalıştıkları sektörler, şirketler ve üstlendikleri unvanların takibi sayesinde üniversite istihdam verilerinin güncel kalması sağlanır.
+        </p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+          </svg>
+        </div>
+        <h3>Öğrenci - Mezun Mentorluğu</h3>
+        <p>
+          Halen eğitim gören İÜ öğrencileri ile alanında deneyim kazanmış mezunları buluşturan rehberlik ve kariyer mentorluğu altyapısı.
+        </p>
+      </div>
+
+      <!-- Feature 4 -->
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
+        </div>
+        <h3>Akademik Analitik & Raporlama</h3>
+        <p>
+          Bölüm ve fakülte bazlı istatistiki grafikler, müfredat geri bildirimleri ve üniversite akreditasyon süreçleri için doğrulanmış mezun verisi.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Interactive API Sandbox Section -->
+<section class="section sandbox-section" id="api-sandbox">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-eyebrow">Etkileşimli Test Paneli</span>
+      <h2 class="section-title">Canlı API Uç Noktaları</h2>
+      <p class="section-subtitle">
+        Geliştirilen test uç noktalarını doğrudan aşağıdaki panelden çalıştırabilir veya <a href="/docs" target="_blank" style="color: var(--accent); font-weight: 600; text-decoration: underline;">Swagger UI</a> üzerinden inceleyebilirsiniz.
+      </p>
+    </div>
+
+    <div class="sandbox-container">
+      <!-- Endpoint Selection Cards -->
+      <div class="endpoint-list">
+        <!-- Test Endpoint 1: /hello -->
+        <div class="endpoint-card selected" data-url="/hello">
+          <div class="endpoint-header">
+            <div>
+              <span class="endpoint-badge">GET</span>
+              <span class="endpoint-path">/hello</span>
+            </div>
+            <span style="font-size: 0.75rem; color: var(--accent); font-weight: 600;">Seçili &bull; Tıkla</span>
+          </div>
+          <div class="endpoint-desc">
+            Varsayılan "Hello, World!" JSON mesajını döndürür.
+          </div>
+        </div>
+
+        <!-- Test Endpoint 2: /hello/{name} -->
+        <div class="endpoint-card" data-url="/hello/IstanbulUniversitesi">
+          <div class="endpoint-header">
+            <div>
+              <span class="endpoint-badge">GET</span>
+              <span class="endpoint-path">/hello/{name}</span>
+            </div>
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Parametrik Yol</span>
+          </div>
+          <div class="endpoint-desc">
+            URL parametresi olarak girilen isme özel selamlama mesajı üretir.
+          </div>
+        </div>
+
+        <!-- Test Endpoint 3: /sum/{number1}/{number2} -->
+        <div class="endpoint-card" data-url="/sum/15/27">
+          <div class="endpoint-header">
+            <div>
+              <span class="endpoint-badge">GET</span>
+              <span class="endpoint-path">/sum/{number1}/{number2}</span>
+            </div>
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Servis Katmanı</span>
+          </div>
+          <div class="endpoint-desc">
+            İki sayıyı <code>CalculatorService</code> katmanında toplayarak Pydantic şemasıyla doğrulanmış JSON döndürür.
+          </div>
+        </div>
+
+        <!-- Swagger Link Quick Card -->
+        <div style="background-color: var(--info-bg); border: 1px dashed rgba(2, 132, 199, 0.4); border-radius: var(--radius-md); padding: 1rem 1.25rem;">
+          <div style="font-weight: 700; color: var(--info); font-size: 0.9rem; margin-bottom: 0.35rem;">
+            Tam Swagger / OpenAPI Dokümanı
+          </div>
+          <div style="font-size: 0.85rem; color: #0369a1; line-height: 1.5;">
+            Tüm şemaları, OpenAPI 3.1 spesifikasyonunu ve parametre tiplerini görüntülemek için <a href="/docs" target="_blank" style="font-weight: 700; text-decoration: underline;">/docs</a> adresini ziyaret edebilirsiniz.
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Terminal / Response Box -->
+      <div class="terminal-panel">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="terminal-title">HTTP Client &bull; Response Viewer</div>
+          <span id="responseStatusBadge" style="font-size: 0.75rem; font-family: var(--font-mono); color: #34d399;">200 OK</span>
+        </div>
+
+        <div class="terminal-body">
+          <div class="terminal-url-row">
+            <span class="terminal-method">GET</span>
+            <input type="text" id="terminalInputUrl" class="terminal-input-url" value="/hello" spellcheck="false" />
+            <button id="terminalRunBtn" class="terminal-run-btn">Çalıştır</button>
+          </div>
+
+          <div style="font-size: 0.75rem; color: #94a3b8; font-family: var(--font-mono);">
+            Yanıt Gövdesi (JSON Output):
+          </div>
+
+          <pre id="terminalOutputBox" class="terminal-output-box">Yükleniyor...</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
