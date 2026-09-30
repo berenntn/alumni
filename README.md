@@ -96,7 +96,9 @@ alumni-tracking-system/
 │   ├── api/                       # API ve Web rotaları
 │   │   ├── __init__.py
 │   │   ├── web_routes.py          # / ve /about HTML sayfa yönlendirmeleri
-│   │   └── test_routes.py         # /hello, /hello/{name}, /sum test uç noktaları
+│   │   ├── test_routes.py         # /hello, /hello/{name}, /sum test uç noktaları
+│   │   ├── health_routes.py       # /api/health sağlık kontrolü uç noktası
+│   │   └── user_routes.py         # /api/users kullanıcı CRUD uç noktaları
 │   ├── core/                      # Temel konfigürasyon ve veritabanı
 │   │   ├── __init__.py
 │   │   ├── config.py              # Pydantic BaseSettings ortam ayarları
@@ -130,14 +132,25 @@ alumni-tracking-system/
 
 ## 🚀 Uç Noktalar (Endpoints)
 
+FastAPI, OpenAPI standardını kullanarak etkileşimli API dokümantasyonunu otomatik olarak üretir:
+- **Swagger UI:** `http://127.0.0.1:8000/docs` adresinden erişilebilir. Swagger UI, FastAPI tarafından otomatik olarak sağlanmaktadır. Bu arayüz üzerinden tüm uç noktalar tarayıcı üzerinden doğrudan test edilebilir, parametreler ve şemalar görüntülenebilir.
+- **ReDoc:** `http://127.0.0.1:8000/redoc` adresinden erişilebilen alternatif API dokümantasyonudur.
+
+### 📋 Uç Nokta Listesi
+
 | Metot | Yol (Path) | Tip | Açıklama | Örnek Yanıt |
 | :--- | :--- | :--- | :--- | :--- |
 | `GET` | `/` | HTML | Modern Açılış Sayfası | HTML Belgesi |
 | `GET` | `/about` | HTML | Proje & Mimari Hakkında Sayfası | HTML Belgesi |
-| `GET` | `/docs` | HTML | Swagger UI İnteraktif Dokümantasyon | Swagger Arayüzü |
+| `GET` | `/docs` | HTML | Swagger UI Dokümantasyonu (FastAPI otomatik sağlar) | Swagger Arayüzü (`http://127.0.0.1:8000/docs`) |
 | `GET` | `/redoc` | HTML | ReDoc API Dokümantasyonu | ReDoc Arayüzü |
-| `GET` | `/hello` | JSON | Genel selamlama mesajı | `{"message": "Hello, World!"}` |
-| `GET` | `/hello/{name}` | JSON | İsme özel kişiselleştirilmiş selamlama | `{"message": "Hello, Ahmet!"}` |
+| `GET` | `/api/health` | JSON | Servisin çalışır durumda olduğunu ve sağlık durumunu kontrol eder | `{"status": "ok"}` |
+| `GET` | `/api/users/{id}` | JSON | Kullanıcı getirme için örnek/test amaçlı JSON yanıtı döner (veritabanı işlemi yapmaz) | `{"id": 1, "method": "GET", "status": "ok"}` |
+| `PUT` | `/api/users/{id}` | JSON | Kullanıcı güncelleme için örnek/test amaçlı JSON yanıtı döner (veritabanı işlemi yapmaz) | `{"id": 1, "method": "PUT", "status": "updated"}` |
+| `PATCH` | `/api/users/{id}` | JSON | Kullanıcı kısmi güncelleme için örnek/test amaçlı JSON yanıtı döner (veritabanı işlemi yapmaz) | `{"id": 1, "method": "PATCH", "status": "updated"}` |
+| `DELETE` | `/api/users/{id}` | JSON | Kullanıcı silme için örnek/test amaçlı JSON yanıtı döner (veritabanı işlemi yapmaz) | `{"id": 1, "method": "DELETE", "status": "deleted"}` |
+| `GET` | `/hello` | JSON | Genel selamlama mesajı döner | `{"message": "Hello, World!"}` |
+| `GET` | `/hello/{name}` | JSON | İsme özel kişiselleştirilmiş selamlama mesajı döner | `{"message": "Hello, Ahmet!"}` |
 | `GET` | `/sum/{a}/{b}`| JSON | İki sayının toplamını hesaplar | `{"number1": 15, "number2": 27, "operation": "sum", "result": 42}` |
 
 ---
@@ -185,7 +198,7 @@ uvicorn app.main:app --reload --port 8000
 Uygulama başarıyla başlatıldığında aşağıdaki adresleri tarayıcınızda açabilirsiniz:
 - **Açılış Sayfası (Landing Page):** [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 - **Hakkında Sayfası:** [http://127.0.0.1:8000/about](http://127.0.0.1:8000/about)
-- **Swagger API Dokümantasyonu:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **Swagger API Dokümantasyonu:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) (FastAPI tarafından otomatik olarak sağlanır)
 - **ReDoc:** [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 
 ---
