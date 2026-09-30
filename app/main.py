@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.web_routes import web_router
 from app.api.test_routes import test_router
 from app.api.health_routes import router as health_router
+from app.api.user_routes import router as user_router
 from app.core.config import settings
 
 # Base directory for resolving static and template directories
@@ -36,6 +37,7 @@ app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 app.include_router(web_router)
 app.include_router(test_router)
 app.include_router(health_router)
+app.include_router(user_router)
 
 
 if __name__ == "__main__":
