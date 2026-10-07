@@ -17,11 +17,12 @@ Bu ilk aşamada; FastAPI tabanlı modern, özgün ve responsive bir açılış s
 1. [Proje Hakkında](#-proje-hakkında)
 2. [Teknoloji Yığını](#-teknoloji-yığını)
 3. [Katmanlı Mimari (Layered Architecture)](#-katmanlı-mimari-layered-architecture)
-4. [Proje Dizin Yapısı](#-proje-dizin-yapısı)
-5. [Uç Noktalar (Endpoints)](#-uç-noktalar-endpoints)
-6. [Yerel Kurulum ve Çalıştırma](#-yerel-kurulum-ve-çalıştırma)
-7. [Docker ve Docker Compose ile Çalıştırma](#-docker-ve-docker-compose-ile-çalıştırma)
-8. [Gelecek Aşamalar (Roadmap)](#-gelecek-aşamalar-roadmap)
+4. [MVC Architecture](#-mvc-architecture)
+5. [Project Directory Structure](#-project-directory-structure)
+6. [Uç Noktalar (Endpoints)](#-uç-noktalar-endpoints)
+7. [Yerel Kurulum ve Çalıştırma](#-yerel-kurulum-ve-çalıştırma)
+8. [Docker ve Docker Compose ile Çalıştırma](#-docker-ve-docker-compose-ile-çalıştırma)
+9. [Gelecek Aşamalar (Roadmap)](#-gelecek-aşamalar-roadmap)
 
 ---
 
@@ -86,47 +87,116 @@ Proje, kurumsal yazılım geliştirme standartlarına uygun olarak sorumluluklar
 
 ---
 
-## 📂 Proje Dizin Yapısı
+## 🏛 MVC Architecture
+
+Bu proje, modern ve asenkron Python web çatısı olan **FastAPI** ile geliştirilmiştir. FastAPI, Django veya Ruby on Rails gibi geleneksel monolitik MVC (Model-View-Controller) kalıplarını zorunlu kılmak yerine, esnek, modüler ve yüksek performanslı bir **Katmanlı Mimari (Layered Architecture)** yaklaşımını benimser.
+
+Bununla birlikte, sorumlulukların ayrılması (*Separation of Concerns*) prensibi doğrultusunda, projedeki klasör ve dosya yapısı klasik MVC mimarisinin temel kavramlarıyla doğrudan eşleştirilebilir:
+
+### 🧩 MVC Bileşenlerinin Proje Yapısıyla İlişkisi
+
+- **Model (`app/models/`):**  
+  Veri modellerini ve veritabanı şemalarını temsil eder. SQLAlchemy ORM modelleri bu klasör altında tanımlanır. Verinin yapısını, tabloları, sütunları ve ilişkileri yöneten kalıcılık (persistence) katmanıdır.
+- **View (`app/templates/` ve `app/static/`):**  
+  Kullanıcıya sunulan arayüz ve sunum katmanıdır. `app/templates/` altındaki Jinja2 HTML şablonları (`index.html`, `about.html`, `base.html`) dinamik web sayfalarını üretir; `app/static/` altındaki CSS ve JavaScript dosyaları ise arayüz stilini ve istemci taraflı etkileşimleri sağlar. REST API uç noktalarında ise istemciye döndürülen standart JSON formatı veri sunum katmanı (View) olarak işlev görür.
+- **Controller / API Routes (`app/api/`):**  
+  İstemciden gelen HTTP isteklerini (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) karşılayan, rota parametrelerini doğrulayan ve isteği uygun servis katmanına veya HTML şablonuna yönlendiren kontrol katmanıdır (`web_routes.py`, `test_routes.py`, `health_routes.py`, `user_routes.py`).
+- **Service Layer (`app/services/`):**  
+  İş mantığının (Business Logic) yürütüldüğü katmandır. Rotaların (controller) hafif ve temiz kalmasını sağlayarak hesaplama, doğrulama ve iş kurallarını bağımsız olarak yürütür (örneğin `CalculatorService`).
+- **Core / Configuration (`app/core/`):**  
+  Uygulamanın merkezi ortam yapılandırmalarını (`config.py`) ve SQLAlchemy motoru ile veritabanı oturum yönetimini (`database.py`) barındıran altyapı katmanıdır.
+- **Application Entry Point (`app/main.py`):**  
+  FastAPI uygulamasını başlatan, ara yazılımları (middleware) ve statik dosya dizinini bağlayan, tüm API router'larını uygulamaya dahil eden ana giriş noktasıdır.
+
+> [!IMPORTANT]
+> **Kullanıcı Endpoint'leri Simülasyon Durumu (Mock/Test JSON):**  
+> Controller katmanında yer alan `app/api/user_routes.py` dosyasındaki `GET`, `PUT`, `PATCH` ve `DELETE` `/api/users/{id}` endpoint'leri şu an **veritabanı üzerinde gerçek bir CRUD işlemi gerçekleştirmemektedir**. Katmanlı mimarinin HTTP metotlarını ve yönlendirme mantığını test etmek amacıyla statik/örnek JSON yanıtları (`{"id": id, "method": "...", "status": "..."}`) döndürmektedir.
+
+---
+
+## 📂 Project Directory Structure
+
+Projede yer alan gerçek dizin ve dosya yapısı aşağıda gösterilmektedir:
 
 ```
 alumni-tracking-system/
 ├── app/
-│   ├── __init__.py                # Uygulama modül belirteci
-│   ├── main.py                    # FastAPI uygulama örneği ve başlatıcı
-│   ├── api/                       # API ve Web rotaları
+│   ├── __init__.py                # Uygulama paket modülü belirteci
+│   ├── main.py                    # FastAPI uygulama örneği ve router kayıtları (Giriş Noktası)
+│   ├── api/                       # Controller Katmanı: HTTP rotaları ve uç noktalar
 │   │   ├── __init__.py
-│   │   ├── web_routes.py          # / ve /about HTML sayfa yönlendirmeleri
-│   │   ├── test_routes.py         # /hello, /hello/{name}, /sum test uç noktaları
-│   │   ├── health_routes.py       # /api/health sağlık kontrolü uç noktası
-│   │   └── user_routes.py         # /api/users kullanıcı CRUD uç noktaları
-│   ├── core/                      # Temel konfigürasyon ve veritabanı
+│   │   ├── health_routes.py       # Sistem sağlık kontrolü rotası (/api/health)
+│   │   ├── test_routes.py         # Test ve hesaplama uç noktaları (/hello, /sum)
+│   │   ├── user_routes.py         # Kullanıcı simülasyon rotaları (/api/users/{id})
+│   │   └── web_routes.py          # Web sayfaları HTML şablon rotaları (/ ve /about)
+│   ├── core/                      # Temel konfigürasyon ve veritabanı altyapısı
 │   │   ├── __init__.py
 │   │   ├── config.py              # Pydantic BaseSettings ortam ayarları
-│   │   └── database.py            # SQLAlchemy engine, SessionLocal ve get_db
-│   ├── models/                    # SQLAlchemy ORM modelleri (Aşama 2 hazırlığı)
+│   │   └── database.py            # SQLAlchemy engine, SessionLocal ve get_db oturum yönetimi
+│   ├── models/                    # Model Katmanı: SQLAlchemy ORM veritabanı modelleri
 │   │   └── __init__.py
-│   ├── schemas/                   # Pydantic veri modelleri
+│   ├── schemas/                   # Pydantic veri modelleri ve DTO (Data Transfer Object) şemaları
 │   │   ├── __init__.py
-│   │   └── test_schemas.py        # Test istek/yanıt şemaları
-│   ├── services/                  # İş mantığı (Business logic) servisleri
+│   │   └── test_schemas.py        # Test uç noktaları için girdi/çıktı doğrulama şemaları
+│   ├── services/                  # İş Mantığı Katmanı (Business Logic / Service Layer)
 │   │   ├── __init__.py
-│   │   └── calculator_service.py  # Örnek hesaplama servisi
-│   ├── static/                    # Statik dosyalar
+│   │   └── calculator_service.py  # Örnek hesaplama iş mantığı servisi
+│   ├── static/                    # View Katmanı: Statik varlıklar
 │   │   ├── css/
-│   │   │   └── style.css          # Özel, modern ve responsive stil dosyası
+│   │   │   └── style.css          # Özel responsive CSS stil dosyası
 │   │   └── js/
-│   │       └── main.js            # Etkileşimli test paneli ve mobil menü betiği
-│   └── templates/                 # Jinja2 HTML şablonları
-│       ├── base.html              # Ortak düzen (header, nav, footer)
-│       ├── index.html             # Ana sayfa (Landing page)
-│       └── about.html             # Hakkında sayfası
-├── Dockerfile                     # Python 3.11 konteyner tanımı
+│   │       └── main.js            # İstemci taraflı etkileşim ve test konsolu betiği
+│   └── templates/                 # View Katmanı: Jinja2 HTML şablonları
+│       ├── base.html              # Ortak düzen iskeleti (header, navbar, footer)
+│       ├── index.html             # Ana açılış sayfası (Landing Page)
+│       └── about.html             # Proje hakkında sayfası
+├── Dockerfile                     # Python 3.11 konteyner ortam tanımı
 ├── docker-compose.yml             # Web ve PostgreSQL servislerinin orkestrasyonu
-├── requirements.txt               # Gerekli Python bağımlılıkları
-├── .env.example                   # Örnek ortam değişkenleri şablonu
-├── .gitignore                     # Git tarafından yok sayılacak dosyalar
-└── README.md                      # Proje kılavuzu
+├── requirements.txt               # Proje bağımlılıkları listesi
+├── .env.example                   # Ortam değişkenleri örnek şablonu
+├── .gitignore                     # Git sürüm kontrolü hariç tutma kuralları
+└── README.md                      # Proje dokümantasyonu ve mimari kılavuz
 ```
+
+### 📁 Klasör ve Dosyaların Görevleri
+
+#### 1. Ana Uygulama Klasörü (`app/`)
+- **`app/api/` (Controller / API Routes):**  
+  HTTP isteklerini yakalayan ve yönlendiren uç noktaları barındırır.
+  - **`app/api/web_routes.py`:** Jinja2 şablon motorunu kullanarak tarayıcıya HTML sayfalarını (`/` açılış sayfası ve `/about` hakkında sayfası) sunan web yönlendirmesidir.
+  - **`app/api/test_routes.py`:** Katmanlı mimari işleyişini, Pydantic doğrulamasını ve servis katmanı entegrasyonunu doğrulamak için `/hello`, `/hello/{name}` ve `/sum/{a}/{b}` test uç noktalarını barındırır.
+  - **`app/api/health_routes.py`:** Sistemin ve sunucunun ayakta olduğunu denetleyen `/api/health` sağlık kontrolü GET endpoint'ini (`{"status": "ok"}`) sunar.
+  - **`app/api/user_routes.py`:** Kullanıcı işlemleri için `/api/users/{id}` rotası altında `GET`, `PUT`, `PATCH` ve `DELETE` HTTP metotlarını karşılar. *(Gerçek veritabanı işlemi yapmaksızın test/simülasyon amaçlı örnek JSON yanıtları döner.)*
+- **`app/core/` (Core / Configuration):**  
+  Uygulamanın temel ayarlarını ve veritabanı altyapısını yönetir.
+  - **`app/core/config.py`:** Pydantic `BaseSettings` ile `.env` dosyasından ve ortam değişkenlerinden uygulama adı, sürüm, port ve veritabanı URL'si gibi yapılandırmaları okur.
+  - **`app/core/database.py`:** SQLAlchemy veritabanı motorunu (`create_engine`), oturum fabrikasını (`sessionmaker`) ve FastAPI bağımlılık enjeksiyonunda kullanılan `get_db` fonksiyonunu tanımlar.
+- **`app/models/` (Model Katmanı):**  
+  İlişkisel veritabanı tablolarını Python sınıfları olarak temsil eden SQLAlchemy ORM modellerini barındırır.
+- **`app/schemas/` (Data Transfer Objects / Pydantic Schemas):**  
+  İstek ve yanıt verilerinin tiplerini, doğrulamalarını ve OpenAPI şemalarını belirleyen Pydantic modellerini (`test_schemas.py`) içerir.
+- **`app/services/` (Service Layer / Business Logic):**  
+  İş kurallarının ve hesaplamaların controller katmanından yalıtılarak yürütüldüğü servis sınıflarını (`calculator_service.py`) içerir.
+- **`app/static/` (View / Statik Dosyalar):**  
+  Arayüzün görsel tasarımını sağlayan CSS stillerini (`css/style.css`) ve sayfa içi dinamik özellikleri yöneten JavaScript dosyalarını (`js/main.js`) barındırır.
+- **`app/templates/` (View / Jinja2 Şablonları):**  
+  Sunucu taraflı render edilen HTML şablonlarını (`base.html`, `index.html`, `about.html`) barındırır.
+
+#### 2. Uygulama Giriş Noktası (`app/main.py`)
+- **`app/main.py`:**  
+  FastAPI uygulamasının ana giriş noktasıdır.
+  - `FastAPI(...)` örneğini oluşturur ve OpenAPI/Swagger başlıklarını, açıklamalarını yapılandırır,
+  - `/static` dizinini `StaticFiles` ile uygulamaya bağlar (`app.mount("/static", ...)`),
+  - Tüm router'ları (`web_router`, `test_router`, `health_router`, `user_router`) `app.include_router(...)` fonksiyonu ile merkezi olarak uygulamaya dahil eder,
+  - Doğrudan çalıştırıldığında Uvicorn ASGI sunucusunu başlatır.
+
+#### 3. Kök Dizin Yapılandırma Dosyaları
+- **`Dockerfile`:** Uygulamanın Python 3.11 tabanlı konteyner ortamında çalışması için gereken adımları tanımlar.
+- **`docker-compose.yml`:** FastAPI web uygulaması ile PostgreSQL 16 veritabanı konteynerini birlikte başlatan orkestrasyon dosyasıdır.
+- **`requirements.txt`:** FastAPI, Uvicorn, SQLAlchemy, Pydantic, Jinja2 vb. bağımlılıkları listeler.
+- **`.env.example`:** Ortam değişkenleri için örnek konfigürasyon şablonudur.
+- **`.gitignore`:** `venv/`, `__pycache__/`, `.env` gibi Git tarafından takip edilmemesi gereken dosya ve dizinleri tanımlar.
+- **`README.md`:** Projenin mimarisini, dizin yapısını, kurulum ve çalıştırma adımlarını açıklayan kapsamlı kılavuzdur.
 
 ---
 
