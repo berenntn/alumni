@@ -23,7 +23,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_tags=[
-        {"name": "Web Pages", "description": "Kullanıcı arayüzü için HTML sayfaları"},
+        {"name": "Web Pages", "description": "Kullanıcı arayüzü ve web rotaları (UserController)"},
+        {"name": "Users", "description": "Kullanıcı REST API CRUD uç noktaları (ApiUserController)"},
+        {"name": "Health", "description": "Sistem sağlık kontrolü uç noktaları"},
         {"name": "Test Endpoints", "description": "Temel test ve hesaplama uç noktaları"},
     ],
 )

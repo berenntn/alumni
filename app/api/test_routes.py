@@ -39,8 +39,8 @@ async def get_hello_name(
     description="Calculates and returns the sum of two numbers using the service layer.",
 )
 async def get_sum(
-    number1: float = PathParam(..., description="The first number", examples=[15]),
-    number2: float = PathParam(..., description="The second number", examples=[27]),
+    a: float = PathParam(..., description="The first number", examples=[15]),
+    b: float = PathParam(..., description="The second number", examples=[27]),
 ) -> SumResponse:
     """Calculates the sum of two numbers and returns the structured result."""
     # Convert whole numbers to int for cleaner output presentation

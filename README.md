@@ -21,7 +21,7 @@ Bu ilk aşamada; FastAPI tabanlı modern, özgün ve responsive bir açılış s
 5. [Kullanıcı Modeli & Bellek İçi CRUD Servisi](#-kullanıcı-modeli--bellek-içi-crud-servisi)
 6. [User Controllers (UserController & ApiUserController)](#-user-controllers-usercontroller--apiusercontroller)
 7. [Project Directory Structure](#-project-directory-structure)
-8. [Uç Noktalar (Endpoints)](#-uç-noktalar-endpoints)
+8. [Uç Noktalar (Endpoints) & Swagger UI](#-uç-noktalar-endpoints--swagger-ui)
 9. [Yerel Kurulum ve Çalıştırma](#-yerel-kurulum-ve-çalıştırma)
 10. [Docker ve Docker Compose ile Çalıştırma](#-docker-ve-docker-compose-ile-çalıştırma)
 11. [Gelecek Aşamalar (Roadmap)](#-gelecek-aşamalar-roadmap)
@@ -102,7 +102,7 @@ Bununla birlikte, sorumlulukların ayrılması (*Separation of Concerns*) prensi
 - **View (`app/templates/` ve `app/static/`):**  
   Kullanıcıya sunulan arayüz ve sunum katmanıdır. `app/templates/` altındaki Jinja2 HTML şablonları (`index.html`, `about.html`, `base.html`) dinamik web sayfalarını üretir; `app/static/` altındaki CSS ve JavaScript dosyaları ise arayüz stilini ve istemci taraflı etkileşimleri sağlar. REST API uç noktalarında ise istemciye döndürülen standart JSON formatı veri sunum katmanı (View) olarak işlev görür.
 - **Controller (`app/controllers/`) & API Routes (`app/api/`):**  
-  İstemciden gelen HTTP isteklerini (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) karşılayan, rota parametrelerini doğrulayan ve isteği uygun servis katmanına veya HTML şablonuna yönlendiren kontrol katmanıdır (`web_routes.py`, `test_routes.py`, `health_routes.py`, `user_routes.py`, `UserController`, `ApiUserController`).
+  İstemciden gelen HTTP isteklerini (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) karşılayan, rota parametrelerini ve gövde verilerini (Pydantic şemaları) doğrulayan ve isteği uygun controller katmanına yönlendiren kontrol katmanıdır (`web_routes.py` -> `UserController`, `user_routes.py` -> `ApiUserController`, `test_routes.py`, `health_routes.py`). Rotalar doğrudan servis katmanına erişmez; tüm işlemler controller sınıfları üzerinden delege edilir.
 - **Service Layer (`app/services/`):**  
   İş mantığının (Business Logic) yürütüldüğü katmandır. Rotaların (controller) hafif ve temiz kalmasını sağlayarak hesaplama, doğrulama ve iş kurallarını bağımsız olarak yürütür (örneğin `CalculatorService`, `UserService`).
 - **Core / Configuration (`app/core/`):**  
@@ -110,9 +110,9 @@ Bununla birlikte, sorumlulukların ayrılması (*Separation of Concerns*) prensi
 - **Application Entry Point (`app/main.py`):**  
   FastAPI uygulamasını başlatan, ara yazılımları (middleware) ve statik dosya dizinini bağlayan, tüm API router'larını uygulamaya dahil eden ana giriş noktasıdır.
 
-> [!IMPORTANT]
-> **Kullanıcı Endpoint'leri Simülasyon Durumu (Mock/Test JSON):**  
-> Controller katmanında yer alan `app/api/user_routes.py` dosyasındaki `GET`, `PUT`, `PATCH` ve `DELETE` `/api/users/{id}` endpoint'leri geriye dönük uyumluluk için statik/örnek JSON yanıtları (`{"id": id, "method": "...", "status": "..."}`) döndürmeye devam etmektedir. Gerçek CRUD mantığı ise `app/controllers/` altında `UserController` ve `ApiUserController` sınıfları aracılığıyla `UserService`'e delege edilerek yürütülmektedir.
+> [!NOTE]
+> **Controller ve Rota Entegrasyonu (Route-to-Controller Delegation):**  
+> `app/api/web_routes.py` altındaki web rotaları `UserController`'a, `app/api/user_routes.py` altındaki REST API rotaları ise `ApiUserController`'a bağlanmıştır. Rotalar doğrudan `UserService` ile temas kurmaz; tüm veri akışı ilgili controller sınıfı üzerinden yürütülür.
 
 ---
 
@@ -173,9 +173,40 @@ REST API istemcilerine (mobil uygulamalar, harici servisler veya AJAX/fetch iste
 ### 3. Controller ve UserService İşbirliği (Delegation Pattern)
 - **Mantık Tekrarının Önlenmesi:** Her iki controller sınıfı da veritabanı veya bellek içi veri saklama mantığını kendi içerisinde **kesinlikle tekrarlamaz**.
 - **Servis Katmanına Delegasyon:** Tüm CRUD işlemleri, veri saklama ve model doğrulama adımları için doğrudan `UserService` (`app/services/user_service.py`) çağrılır.
+- **Rotaların Bağımsızlığı:** HTTP rota dosyaları (`app/api/user_routes.py` ve `app/api/web_routes.py`) doğrudan `UserService`'e erişmez; istekleri controller sınıflarına (`UserController` ve `ApiUserController`) devreder.
 - **Bağımsızlık & Test Edilebilirlik:** Controller'lar saf Python sınıfları olarak tasarlanmıştır ve herhangi bir veritabanı bağlantısı gerektirmeksizin birim testlerle (`tests/test_user_controller.py` ve `tests/test_api_user_controller.py`) tamamen doğrulanmıştır.
 
-### 4. Bellek İçi Saklama & Veritabanı Durumu
+### 4. Rota ve Controller Bağlantıları (Route to Controller Mapping)
+
+FastAPI rota modülleri, ilgili controller sınıflarına bağlanarak katmanlar arası ayrım tam olarak sağlanmıştır:
+
+| Rota (Route) | HTTP Metodu | Sorumlu Controller | Çağrılan Metot | Açıklama |
+| :--- | :--- | :--- | :--- | :--- |
+| `/` | `GET` | `UserController` | `get_users()` | Ana sayfa (Landing Page) arayüzü ve mezun listesi |
+| `/about` | `GET` | - | - | Proje hakkında sayfası |
+| `/users` | `GET` | `UserController` | `get_users()` | Web arayüzü kullanıcı listeleme |
+| `/users` | `POST` | `UserController` | `create_user()` | Web arayüzü kullanıcı oluşturma |
+| `/users/{id}` | `GET` | `UserController` | `get_user(id)` | Web arayüzü kullanıcı detayı |
+| `/users/{id}` | `PUT` | `UserController` | `update_user(id, ...)` | Web arayüzü kullanıcı güncelleme |
+| `/users/{id}` | `DELETE` | `UserController` | `delete_user(id)` | Web arayüzü kullanıcı silme |
+| `/api/users` | `GET` | `ApiUserController` | `get_users()` | REST API: Tüm kullanıcıları listeleme |
+| `/api/users` | `POST` | `ApiUserController` | `create_user(...)` | REST API: Yeni kullanıcı oluşturma (201 Created) |
+| `/api/users/{id}` | `GET` | `ApiUserController` | `get_user(id)` | REST API: ID ile tekil kullanıcı sorgulama |
+| `/api/users/{id}` | `PUT` | `ApiUserController` | `update_user(id, ...)` | REST API: Kullanıcı tam güncelleme |
+| `/api/users/{id}` | `PATCH` | `ApiUserController` | `update_user(id, ...)` | REST API: Kullanıcı kısmi güncelleme |
+| `/api/users/{id}` | `DELETE` | `ApiUserController` | `delete_user(id)` | REST API: Kullanıcı silme |
+
+### 5. Pydantic İstek/Yanıt Şemaları (`app/schemas/user_schemas.py`)
+REST API uç noktalarında tip güvenliği ve otomatik OpenAPI/Swagger dokümantasyonu için özel Pydantic şemaları tanımlanmıştır:
+- `UserCreateRequest`: Yeni kullanıcı kaydı için zorunlu alanlar (`name`, `email`, `department`, `graduation_year`).
+- `UserUpdateRequest`: PUT uç noktası için tam güncelleme şeması.
+- `UserPatchRequest`: PATCH uç noktası için tüm alanların opsiyonel olduğu kısmi güncelleme şeması.
+- `UserResponseData`: API yanıtlarında kullanıcı verisinin serileştirilmiş biçimi.
+- `UserApiResponse`: Tekil kullanıcı işlemleri için standart JSON zarfı (`status`, `message`, `data`).
+- `UserListApiResponse`: Çoklu kullanıcı sorguları için liste zarfı (`status`, `message`, `data`, `count`).
+- `UserDeleteApiResponse`: Silme işlemi yanıt şeması (`status`, `message`).
+
+### 6. Bellek İçi Saklama & Veritabanı Durumu
 > [!NOTE]
 > Proje bu aşamada halen **in-memory (bellek içi)** veri saklama yapısını (`Dict[int, User]`) kullanmaya devam etmektedir. PostgreSQL veya SQLAlchemy veritabanı bağlantısı henüz eklenmemiştir ve sonraki aşamalarda entegre edilecektir.
 
@@ -194,8 +225,8 @@ alumni-tracking-system/
 │   │   ├── __init__.py
 │   │   ├── health_routes.py       # Sistem sağlık kontrolü rotası (/api/health)
 │   │   ├── test_routes.py         # Test ve hesaplama uç noktaları (/hello, /sum)
-│   │   ├── user_routes.py         # Kullanıcı simülasyon ve ApiUserController rotaları
-│   │   └── web_routes.py          # Web sayfaları HTML şablon rotaları (/ ve /about)
+│   │   ├── user_routes.py         # REST API kullanıcı CRUD rotaları (ApiUserController)
+│   │   └── web_routes.py          # Web sayfaları ve arayüz rotaları (UserController)
 │   ├── controllers/               # Controller Katmanı: MVC Controller sınıfları
 │   │   ├── __init__.py            # Controller paket belirteci ve export listesi
 │   │   ├── api_user_controller.py # REST API kullanıcı CRUD controller'ı
@@ -208,8 +239,9 @@ alumni-tracking-system/
 │   │   ├── __init__.py            # Modeller paket belirteci ve export listesi
 │   │   └── user.py                # Pydantic User (Mezun/Kullanıcı) modeli
 │   ├── schemas/                   # Pydantic veri modelleri ve DTO (Data Transfer Object) şemaları
-│   │   ├── __init__.py
-│   │   └── test_schemas.py        # Test uç noktaları için girdi/çıktı doğrulama şemaları
+│   │   ├── __init__.py            # Şemalar paket belirteci ve export listesi
+│   │   ├── test_schemas.py        # Test uç noktaları için girdi/çıktı doğrulama şemaları
+│   │   └── user_schemas.py        # User CRUD API istek/yanıt Pydantic şemaları
 │   ├── services/                  # İş Mantığı Katmanı (Business Logic / Service Layer)
 │   │   ├── __init__.py            # Servisler paket belirteci ve export listesi
 │   │   ├── calculator_service.py  # Örnek hesaplama iş mantığı servisi
@@ -223,9 +255,10 @@ alumni-tracking-system/
 │       ├── base.html              # Ortak düzen iskeleti (header, navbar, footer)
 │       ├── index.html             # Ana açılış sayfası (Landing Page)
 │       └── about.html             # Proje hakkında sayfası
-├── tests/                         # Birim test paketi
+├── tests/                         # Birim ve entegrasyon test paketi
 │   ├── __init__.py                # Test paketi belirteci
 │   ├── test_api_user_controller.py # ApiUserController REST API CRUD birim testleri
+│   ├── test_routes.py             # Route-to-controller ve HTTP uç nokta entegrasyon testleri
 │   ├── test_user_controller.py    # UserController web CRUD birim testleri
 │   └── test_user_service.py       # User modeli ve bellek içi CRUD servisi birim testleri
 ├── Dockerfile                     # Python 3.11 konteyner ortam tanımı
@@ -241,14 +274,14 @@ alumni-tracking-system/
 #### 1. Ana Uygulama Klasörü (`app/`)
 - **`app/api/` (HTTP Rotaları):**  
   HTTP isteklerini yakalayan ve yönlendiren uç noktaları barındırır.
-  - **`app/api/web_routes.py`:** Jinja2 şablon motorunu kullanarak tarayıcıya HTML sayfalarını (`/` açılış sayfası ve `/about` hakkında sayfası) sunan web yönlendirmesidir.
+  - **`app/api/web_routes.py`:** Jinja2 şablon motorunu kullanarak tarayıcıya HTML sayfalarını (`/` açılış sayfası ve `/about` hakkında sayfası) sunar ve `/users` web rotalarını `UserController` üzerinden yönetir.
   - **`app/api/test_routes.py`:** Katmanlı mimari işleyişini, Pydantic doğrulamasını ve servis katmanı entegrasyonunu doğrulamak için `/hello`, `/hello/{name}` ve `/sum/{a}/{b}` test uç noktalarını barındırır.
   - **`app/api/health_routes.py`:** Sistemin ve sunucunun ayakta olduğunu denetleyen `/api/health` sağlık kontrolü GET endpoint'ini (`{"status": "ok"}`) sunar.
-  - **`app/api/user_routes.py`:** Kullanıcı işlemleri için `/api/users` rotalarını ve `/api/users/{id}` simülasyon uç noktalarını barındırır.
+  - **`app/api/user_routes.py`:** Kullanıcı REST API CRUD işlemlerini (`/api/users`, `/api/users/{id}`) `ApiUserController` üzerinden yönetir, Pydantic şemaları ile istek ve yanıtları doğrular.
 - **`app/controllers/` (Controller Katmanı - MVC Controllers):**  
   Sunum/API katmanı ile servis katmanı arasındaki koordinasyonu sağlayan controller sınıflarını barındırır.
   - **`app/controllers/user_controller.py`:** Web ve genel sunum katmanına yönelik kullanıcı CRUD işlemlerini yönetir (`create_user`, `get_user`, `get_users`, `update_user`, `delete_user`).
-  - **`app/controllers/api_user_controller.py`:** REST API istemcilerine yönelik kullanıcı CRUD işlemlerini yönetir ve JSON standart yanıtlarını üretir.
+  - **`app/controllers/api_user_controller.py`:** REST API istemcilerine yönelik kullanıcı CRUD işlemlerini yönetir ve standart JSON yanıtlarını üretir.
 - **`app/core/` (Core / Configuration):**  
   Uygulamanın temel ayarlarını ve veritabanı altyapısını yönetir.
   - **`app/core/config.py`:** Pydantic `BaseSettings` ile `.env` dosyasından ve ortam değişkenlerinden uygulama adı, sürüm, port ve veritabanı URL'si gibi yapılandırmaları okur.
@@ -257,7 +290,7 @@ alumni-tracking-system/
   Veri modellerini barındırır.
   - **`app/models/user.py`:** Temel mezun/kullanıcı varlığını temsil eden Pydantic modelidir (`id`, `name`, `email`, `department`, `graduation_year`).
 - **`app/schemas/` (Data Transfer Objects / Pydantic Schemas):**  
-  İstek ve yanıt verilerinin tiplerini, doğrulamalarını ve OpenAPI şemalarını belirleyen Pydantic modellerini (`test_schemas.py`) içerir.
+  İstek ve yanıt verilerinin tiplerini, doğrulamalarını ve OpenAPI şemalarını belirleyen Pydantic modellerini içerir (`test_schemas.py` ve `user_schemas.py`).
 - **`app/services/` (Service Layer / Business Logic):**  
   İş mantığının yürütüldüğü servis sınıflarını barındırır.
   - **`app/services/calculator_service.py`:** Örnek hesaplama iş mantığını yürütür.
@@ -270,12 +303,13 @@ alumni-tracking-system/
 #### 2. Uygulama Giriş Noktası (`app/main.py`)
 - **`app/main.py`:**  
   FastAPI uygulamasının ana giriş noktasıdır.
-  - `FastAPI(...)` örneğini oluşturur ve OpenAPI/Swagger başlıklarını, açıklamalarını yapılandırır,
+  - `FastAPI(...)` örneğini oluşturur ve OpenAPI/Swagger başlıklarını, açıklamalarını ve etiketlerini (`openapi_tags`) yapılandırır,
   - `/static` dizinini `StaticFiles` ile uygulamaya bağlar (`app.mount("/static", ...)`),
   - Tüm router'ları (`web_router`, `test_router`, `health_router`, `user_router`) `app.include_router(...)` fonksiyonu ile merkezi olarak uygulamaya dahil eder,
   - Doğrudan çalıştırıldığında Uvicorn ASGI sunucusunu başlatır.
 
 #### 3. Test Paketi (`tests/`)
+- **`tests/test_routes.py`:** Doğrudan ASGI istekleri ile `user_routes.py`, `web_routes.py`, `health_routes.py` ve `test_routes.py` rotalarının controller bağlantılarını, HTTP durum kodlarını ve JSON yanıtlarını test eder.
 - **`tests/test_user_controller.py`:** `UserController` sınıfının web odaklı 5 temel CRUD fonksiyonunu (`create_user`, `get_user`, `get_users`, `update_user`, `delete_user`) ve `UserService` delegasyonunu test eder.
 - **`tests/test_api_user_controller.py`:** `ApiUserController` sınıfının REST API formatındaki 5 temel CRUD fonksiyonunu ve serileştirilmiş çıktılarını test eder.
 - **`tests/test_user_service.py`:** `User` modelinin Pydantic doğrulamalarını ve `UserService` bellek içi CRUD işlemlerini test eder.
@@ -291,28 +325,42 @@ alumni-tracking-system/
 
 ---
 
-## 🚀 Uç Noktalar (Endpoints)
+## 🚀 Uç Noktalar (Endpoints) & Swagger UI
 
-FastAPI, OpenAPI standardını kullanarak etkileşimli API dokümantasyonunu otomatik olarak üretir:
-- **Swagger UI:** `http://127.0.0.1:8000/docs` adresinden erişilebilir. Swagger UI, FastAPI tarafından otomatik olarak sağlanmaktadır. Bu arayüz üzerinden tüm uç noktalar tarayıcı üzerinden doğrudan test edilebilir, parametreler ve şemalar görüntülenebilir.
+FastAPI, OpenAPI 3.1 standardını kullanarak etkileşimli API dokümantasyonunu otomatik olarak üretir:
+- **Swagger UI:** `http://127.0.0.1:8000/docs` adresinden erişilebilir. Swagger UI, FastAPI tarafından otomatik olarak sağlanmaktadır. Bu arayüz üzerinden tüm uç noktalar tarayıcı üzerinden doğrudan test edilebilir, şemalar ve HTTP durum kodları incelenebilir.
 - **ReDoc:** `http://127.0.0.1:8000/redoc` adresinden erişilebilen alternatif API dokümantasyonudur.
+
+### 🏷️ Swagger OpenAPI Etiket Grupları (Tags)
+OpenAPI dokümantasyonunda uç noktalar mantıksal gruplara ayrılmıştır:
+1. **Users (`ApiUserController`):** REST API CRUD uç noktaları (`/api/users`, `/api/users/{id}`). İstek ve yanıtlar Pydantic modelleri (`UserCreateRequest`, `UserUpdateRequest`, `UserPatchRequest`, `UserApiResponse` vb.) ile tip güvenli olarak doğrulanır ve belgelenir.
+2. **Web Pages (`UserController`):** HTML şablonları (`/`, `/about`) ve web arayüzü kullanıcı CRUD rotaları (`/users`, `/users/{id}`).
+3. **Health:** Sistemin çalışır durumda olduğunu teyit eden `/api/health` uç noktası.
+4. **Test Endpoints:** Temel katmanlı mimari test rotaları (`/hello`, `/hello/{name}`, `/sum/{a}/{b}`).
 
 ### 📋 Uç Nokta Listesi
 
-| Metot | Yol (Path) | Tip | Açıklama | Örnek Yanıt |
-| :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/` | HTML | Modern Açılış Sayfası | HTML Belgesi |
-| `GET` | `/about` | HTML | Proje & Mimari Hakkında Sayfası | HTML Belgesi |
-| `GET` | `/docs` | HTML | Swagger UI Dokümantasyonu (FastAPI otomatik sağlar) | Swagger Arayüzü (`http://127.0.0.1:8000/docs`) |
-| `GET` | `/redoc` | HTML | ReDoc API Dokümantasyonu | ReDoc Arayüzü |
-| `GET` | `/api/health` | JSON | Servisin çalışır durumda olduğunu ve sağlık durumunu kontrol eder | `{"status": "ok"}` |
-| `GET` | `/api/users/{id}` | JSON | Kullanıcı getirme için örnek/test amaçlı JSON yanıtı döner (veritabanı işlemi yapmaz) | `{"id": 1, "method": "GET", "status": "ok"}` |
-| `PUT` | `/api/users/{id}` | JSON | Kullanıcı güncelleme için örnek/test amaçlı JSON yanıtı döner (veritabanı işlemi yapmaz) | `{"id": 1, "method": "PUT", "status": "updated"}` |
-| `PATCH` | `/api/users/{id}` | JSON | Kullanıcı kısmi güncelleme için örnek/test amaçlı JSON yanıtı döner (veritabanı işlemi yapmaz) | `{"id": 1, "method": "PATCH", "status": "updated"}` |
-| `DELETE` | `/api/users/{id}` | JSON | Kullanıcı silme için örnek/test amaçlı JSON yanıtı döner (veritabanı işlemi yapmaz) | `{"id": 1, "method": "DELETE", "status": "deleted"}` |
-| `GET` | `/hello` | JSON | Genel selamlama mesajı döner | `{"message": "Hello, World!"}` |
-| `GET` | `/hello/{name}` | JSON | İsme özel kişiselleştirilmiş selamlama mesajı döner | `{"message": "Hello, Ahmet!"}` |
-| `GET` | `/sum/{a}/{b}`| JSON | İki sayının toplamını hesaplar | `{"number1": 15, "number2": 27, "operation": "sum", "result": 42}` |
+| Metot | Yol (Path) | Etiket (Tag) | Sorumlu Controller | Açıklama | Başarılı Yanıt Kodu & Tipi |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/` | Web Pages | `UserController` | Modern Açılış Sayfası (Landing Page) | `200 OK` (HTML) |
+| `GET` | `/about` | Web Pages | - | Proje & Mimari Hakkında Sayfası | `200 OK` (HTML) |
+| `GET` | `/users` | Web Pages | `UserController` | Web Kullanıcı Listesi | `200 OK` (JSON) |
+| `POST` | `/users` | Web Pages | `UserController` | Web Kullanıcı Ekleme | `200 OK` (JSON) |
+| `GET` | `/users/{id}` | Web Pages | `UserController` | Web Kullanıcı Detayı | `200 OK` (JSON) |
+| `PUT` | `/users/{id}` | Web Pages | `UserController` | Web Kullanıcı Güncelleme | `200 OK` (JSON) |
+| `DELETE` | `/users/{id}` | Web Pages | `UserController` | Web Kullanıcı Silme | `200 OK` (JSON) |
+| `GET` | `/docs` | - | - | Swagger UI Dokümantasyonu (FastAPI otomatik sağlar) | `200 OK` (Swagger UI) |
+| `GET` | `/redoc` | - | - | ReDoc API Dokümantasyonu | `200 OK` (ReDoc) |
+| `GET` | `/api/health` | Health | - | Servis sağlık durum kontrolü | `200 OK` (`{"status": "ok"}`) |
+| `GET` | `/api/users` | Users | `ApiUserController` | Tüm kullanıcıları listeler | `200 OK` (`UserListApiResponse`) |
+| `POST` | `/api/users` | Users | `ApiUserController` | Yeni kullanıcı oluşturur | `201 Created` (`UserApiResponse`) |
+| `GET` | `/api/users/{id}` | Users | `ApiUserController` | ID ile tekil kullanıcı getirir (Yoksa 404) | `200 OK` / `404 Not Found` |
+| `PUT` | `/api/users/{id}` | Users | `ApiUserController` | Kullanıcıyı tam günceller (Yoksa 404) | `200 OK` / `404 Not Found` |
+| `PATCH` | `/api/users/{id}` | Users | `ApiUserController` | Kullanıcıyı kısmi günceller (Yoksa 404) | `200 OK` / `404 Not Found` |
+| `DELETE` | `/api/users/{id}` | Users | `ApiUserController` | Kullanıcıyı siler (Yoksa 404) | `200 OK` / `404 Not Found` |
+| `GET` | `/hello` | Test Endpoints | - | Genel selamlama mesajı | `200 OK` (`{"message": "Hello, World!"}`) |
+| `GET` | `/hello/{name}` | Test Endpoints | - | İsme özel kişiselleştirilmiş selamlama | `200 OK` (`{"message": "Hello, ..."}`) |
+| `GET` | `/sum/{a}/{b}` | Test Endpoints | - | İki sayının toplamını hesaplar | `200 OK` (`SumResponse`) |
 
 ---
 
