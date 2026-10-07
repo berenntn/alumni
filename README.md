@@ -18,11 +18,12 @@ Bu ilk aşamada; FastAPI tabanlı modern, özgün ve responsive bir açılış s
 2. [Teknoloji Yığını](#-teknoloji-yığını)
 3. [Katmanlı Mimari (Layered Architecture)](#-katmanlı-mimari-layered-architecture)
 4. [MVC Architecture](#-mvc-architecture)
-5. [Project Directory Structure](#-project-directory-structure)
-6. [Uç Noktalar (Endpoints)](#-uç-noktalar-endpoints)
-7. [Yerel Kurulum ve Çalıştırma](#-yerel-kurulum-ve-çalıştırma)
-8. [Docker ve Docker Compose ile Çalıştırma](#-docker-ve-docker-compose-ile-çalıştırma)
-9. [Gelecek Aşamalar (Roadmap)](#-gelecek-aşamalar-roadmap)
+5. [Kullanıcı Modeli & Bellek İçi CRUD Servisi](#-kullanıcı-modeli--bellek-içi-crud-servisi)
+6. [Project Directory Structure](#-project-directory-structure)
+7. [Uç Noktalar (Endpoints)](#-uç-noktalar-endpoints)
+8. [Yerel Kurulum ve Çalıştırma](#-yerel-kurulum-ve-çalıştırma)
+9. [Docker ve Docker Compose ile Çalıştırma](#-docker-ve-docker-compose-ile-çalıştırma)
+10. [Gelecek Aşamalar (Roadmap)](#-gelecek-aşamalar-roadmap)
 
 ---
 
@@ -114,6 +115,36 @@ Bununla birlikte, sorumlulukların ayrılması (*Separation of Concerns*) prensi
 
 ---
 
+## 👤 Kullanıcı Modeli & Bellek İçi CRUD Servisi
+
+Katmanlı mimarinin Model ve Service katmanlarını somutlaştırmak üzere bir **User Modeli** ve veritabanı bağımsız çalışan bir **Bellek İçi CRUD Servisi** hayata geçirilmiştir.
+
+### 1. User Modeli (`app/models/user.py`)
+FastAPI ve Pydantic v2 mimarisine uygun olarak `User` varlık modeli oluşturulmuştur. Temel mezun/kullanıcı bilgilerini temsil eden alanlar şunlardır:
+- `id`: Benzersiz kullanıcı kimliği (`Optional[int]`, servis tarafından otomatik olarak atanır).
+- `name`: Kullanıcı / mezun adı soyadı (`str`, zorunlu alan).
+- `email`: Kullanıcı e-posta adresi (`str`, zorunlu alan).
+- `department`: Mezun olunan veya kayıtlı olunan bölüm (`str`, zorunlu alan).
+- `graduation_year`: Mezuniyet yılı (`int`, 1900-2100 aralığında geçerli).
+
+### 2. Bellek İçi CRUD Servisi (`app/services/user_service.py`)
+Kullanıcılar üzerinde temel CRUD işlemlerini gerçekleştiren `UserService` sınıfı ve fonksiyonel kısayolları tanımlanmıştır:
+- `create_user(...)`: Yeni bir kullanıcı oluşturur, otomatik artan `id` değeri atar ve belleğe kaydeder.
+- `get_user(user_id)`: Belirtilen `id` değerine sahip kullanıcıyı getirir (bulunamazsa `None`).
+- `get_users()`: Bellekteki tüm kullanıcıları liste halinde döndürür.
+- `update_user(user_id, ...)`: Belirtilen kullanıcının alanlarını günceller (bulunamazsa `None`).
+- `delete_user(user_id)`: Belirtilen kullanıcıyı bellekten siler (başarılıysa `True`, bulunamazsa `False`).
+
+Kullanıcı verileri geçici olarak bellek içinde basit bir Python veri yapısında (`Dict[int, User]`) saklanmaktadır.
+
+### 3. Veritabanı Durumu & Gelecek Aşamalar
+> [!NOTE]
+> **Henüz Veritabanı Bağlantısı Kullanılmamaktadır:**  
+> Bu aşamada PostgreSQL veya SQLAlchemy üzerinden herhangi bir veritabanı bağlantısı kurulmamış ve veritabanı işlemi gerçekleştirilmemiştir. Model ve servis tamamen bağımsız ve bellek içi (in-memory) çalışacak şekilde tasarlanmıştır.  
+> Gerçek veritabanı entegrasyonu (PostgreSQL tabloları, Alembic migrasyonları ve SQLAlchemy ORM kalıcılığı) projenin sonraki aşamalarında eklenecektir.
+
+---
+
 ## 📂 Project Directory Structure
 
 Projede yer alan gerçek dizin ve dosya yapısı aşağıda gösterilmektedir:
@@ -133,14 +164,16 @@ alumni-tracking-system/
 │   │   ├── __init__.py
 │   │   ├── config.py              # Pydantic BaseSettings ortam ayarları
 │   │   └── database.py            # SQLAlchemy engine, SessionLocal ve get_db oturum yönetimi
-│   ├── models/                    # Model Katmanı: SQLAlchemy ORM veritabanı modelleri
-│   │   └── __init__.py
+│   ├── models/                    # Model Katmanı: Veri modelleri
+│   │   ├── __init__.py            # Modeller paket belirteci ve export listesi
+│   │   └── user.py                # Pydantic User (Mezun/Kullanıcı) modeli
 │   ├── schemas/                   # Pydantic veri modelleri ve DTO (Data Transfer Object) şemaları
 │   │   ├── __init__.py
 │   │   └── test_schemas.py        # Test uç noktaları için girdi/çıktı doğrulama şemaları
 │   ├── services/                  # İş Mantığı Katmanı (Business Logic / Service Layer)
-│   │   ├── __init__.py
-│   │   └── calculator_service.py  # Örnek hesaplama iş mantığı servisi
+│   │   ├── __init__.py            # Servisler paket belirteci ve export listesi
+│   │   ├── calculator_service.py  # Örnek hesaplama iş mantığı servisi
+│   │   └── user_service.py        # Bellek içi User CRUD servisi
 │   ├── static/                    # View Katmanı: Statik varlıklar
 │   │   ├── css/
 │   │   │   └── style.css          # Özel responsive CSS stil dosyası
@@ -150,6 +183,9 @@ alumni-tracking-system/
 │       ├── base.html              # Ortak düzen iskeleti (header, navbar, footer)
 │       ├── index.html             # Ana açılış sayfası (Landing Page)
 │       └── about.html             # Proje hakkında sayfası
+├── tests/                         # Birim test paketi
+│   ├── __init__.py                # Test paketi belirteci
+│   └── test_user_service.py       # User modeli ve bellek içi CRUD servisi birim testleri
 ├── Dockerfile                     # Python 3.11 konteyner ortam tanımı
 ├── docker-compose.yml             # Web ve PostgreSQL servislerinin orkestrasyonu
 ├── requirements.txt               # Proje bağımlılıkları listesi
@@ -172,11 +208,14 @@ alumni-tracking-system/
   - **`app/core/config.py`:** Pydantic `BaseSettings` ile `.env` dosyasından ve ortam değişkenlerinden uygulama adı, sürüm, port ve veritabanı URL'si gibi yapılandırmaları okur.
   - **`app/core/database.py`:** SQLAlchemy veritabanı motorunu (`create_engine`), oturum fabrikasını (`sessionmaker`) ve FastAPI bağımlılık enjeksiyonunda kullanılan `get_db` fonksiyonunu tanımlar.
 - **`app/models/` (Model Katmanı):**  
-  İlişkisel veritabanı tablolarını Python sınıfları olarak temsil eden SQLAlchemy ORM modellerini barındırır.
+  Veri modellerini barındırır.
+  - **`app/models/user.py`:** Temel mezun/kullanıcı varlığını temsil eden Pydantic modelidir (`id`, `name`, `email`, `department`, `graduation_year`).
 - **`app/schemas/` (Data Transfer Objects / Pydantic Schemas):**  
   İstek ve yanıt verilerinin tiplerini, doğrulamalarını ve OpenAPI şemalarını belirleyen Pydantic modellerini (`test_schemas.py`) içerir.
 - **`app/services/` (Service Layer / Business Logic):**  
-  İş kurallarının ve hesaplamaların controller katmanından yalıtılarak yürütüldüğü servis sınıflarını (`calculator_service.py`) içerir.
+  İş mantığının yürütüldüğü servis sınıflarını barındırır.
+  - **`app/services/calculator_service.py`:** Örnek hesaplama iş mantığını yürütür.
+  - **`app/services/user_service.py`:** Bellek içinde geçici olarak saklanan kullanıcılar üzerinde `create_user`, `get_user`, `get_users`, `update_user` ve `delete_user` CRUD işlemlerini gerçekleştirir.
 - **`app/static/` (View / Statik Dosyalar):**  
   Arayüzün görsel tasarımını sağlayan CSS stillerini (`css/style.css`) ve sayfa içi dinamik özellikleri yöneten JavaScript dosyalarını (`js/main.js`) barındırır.
 - **`app/templates/` (View / Jinja2 Şablonları):**  
@@ -190,7 +229,11 @@ alumni-tracking-system/
   - Tüm router'ları (`web_router`, `test_router`, `health_router`, `user_router`) `app.include_router(...)` fonksiyonu ile merkezi olarak uygulamaya dahil eder,
   - Doğrudan çalıştırıldığında Uvicorn ASGI sunucusunu başlatır.
 
-#### 3. Kök Dizin Yapılandırma Dosyaları
+#### 3. Test Paketi (`tests/`)
+- **`tests/test_user_service.py`:**  
+  Herhangi bir harici veritabanına ihtiyaç duymaksızın `User` modelinin Pydantic doğrulamalarını ve `UserService` bellek içi CRUD fonksiyonlarını (`create_user`, `get_user`, `get_users`, `update_user`, `delete_user`) test eden 9 adet birim test içerir (`python -m unittest discover -s tests`).
+
+#### 4. Kök Dizin Yapılandırma Dosyaları
 - **`Dockerfile`:** Uygulamanın Python 3.11 tabanlı konteyner ortamında çalışması için gereken adımları tanımlar.
 - **`docker-compose.yml`:** FastAPI web uygulaması ile PostgreSQL 16 veritabanı konteynerini birlikte başlatan orkestrasyon dosyasıdır.
 - **`requirements.txt`:** FastAPI, Uvicorn, SQLAlchemy, Pydantic, Jinja2 vb. bağımlılıkları listeler.

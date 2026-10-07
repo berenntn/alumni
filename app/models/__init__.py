@@ -5,5 +5,6 @@ In subsequent stages, Alumni, Department, Education, and Career models will be r
 """
 
 from app.core.database import Base
+from app.models.user import User
 
-__all__ = ["Base"]
+__all__ = ["Base", "User"]
