@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if user %}
+{{ user.name }} | Kullanıcı Detayı
+{% else %}
+Kullanıcı Bulunamadı | 404
+{% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .detail-hero {
+    background: linear-gradient(135deg, var(--primary) 0%, #16325c 100%);
+    color: var(--text-inverse);
+    padding: 3rem 1.5rem;
+    border-bottom: 3px solid var(--accent);
+  }
+
+  .detail-hero h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+  }
+
+  .detail-card {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 2.5rem;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .profile-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 2rem;
+  }
+
+  .profile-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 800;
+    box-shadow: 0 4px 10px rgba(217, 119, 6, 0.3);
+  }
+
+  .profile-title-area h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .profile-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background-color: var(--accent-subtle);
+    color: #92400e;
+    font-weight: 700;
+    border-radius: var(--radius-full);
+    font-size: 0.85rem;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .detail-item {
+    background-color: #f8fafc;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+  }
+
+  .detail-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+  }
+
+  .detail-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-main);
+  }
+
+  .detail-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .actions-right {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  /* Alerts */
+  .alert {
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 500;
+  }
+
+  .alert-success {
+    background-color: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+  }
+
+  .alert-error {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+
+  .btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .btn-danger {
+    background-color: #dc2626;
+    color: #ffffff;
+    border: 1px solid #dc2626;
+  }
+
+  .btn-danger:hover {
+    background-color: #b91c1c;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="detail-hero">
+  <div class="section-container">
+    <div>
+      <div class="badge-university" style="background-color: rgba(251, 191, 36, 0.2); color: #fef3c7; border-color: rgba(251, 191, 36, 0.4); margin-bottom: 0.75rem;">
+        <span class="badge-dot" style="background-color: #fbbf24;"></span>
+        MVC View Katmanı &bull; Kullanıcı Detayı
+      </div>
+      <h1>
+        {% if user %}
+        {{ user.name }}
+        {% else %}
+        Kullanıcı Bulunamadı
+        {% endif %}
+      </h1>
+      <p>
+        {% if user %}
+        Mezun profil detayları ve işlem menüsü.
+        {% else %}
+        Belirtilen ID numarasına sahip kullanıcı kaydı bulunamadı.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top: 2.5rem;">
+  <div class="section-container">
+
+    {% if success_message %}
+    <div class="alert alert-success" role="alert">
+      <span>✓</span>
+      <div>{{ success_message }}</div>
+    </div>
+    {% endif %}
+
+    {% if error_message %}
+    <div class="alert alert-error" role="alert">
+      <span>⚠</span>
+      <div>{{ error_message }}</div>
+    </div>
+    {% endif %}
+
+    {% if user %}
+    <div class="detail-card">
+      <div class="profile-header">
+        <div class="profile-avatar">
+          {{ user.name[:1] | upper }}
+        </div>
+        <div class="profile-title-area">
+          <h2>{{ user.name }}</h2>
+          <span class="profile-badge">🎓 Mezun (ID: #{{ user.id }})</span>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-item">
+          <div class="detail-label">Kullanıcı ID</div>
+          <div class="detail-value">#{{ user.id }}</div>
+        </div>
+
+        <div class="detail-item">
+          <div class="detail-label">Tam Adı (Name)</div>
+          <div class="detail-value">{{ user.name }}</div>
+        </div>
+
+        <div class="detail-item">
+          <div class="detail-label">E-posta (Email)</div>
+          <div class="detail-value">
+            <a href="mailto:{{ user.email }}" style="color: var(--info); text-decoration: underline;">
+              {{ user.email }}
+            </a>
+          </div>
+        </div>
+
+        <div class="detail-item">
+          <div class="detail-label">Bölüm (Department)</div>
+          <div class="detail-value">🏛 {{ user.department }}</div>
+        </div>
+
+        <div class="detail-item" style="grid-column: 1 / -1;">
+          <div class="detail-label">Mezuniyet Yılı (Graduation Year)</div>
+          <div class="detail-value">📅 {{ user.graduation_year }}</div>
+        </div>
+      </div>
+
+      <div class="detail-actions">
+        <a href="/users" class="btn btn-outline">
+          &larr; Listeye Dön
+        </a>
+
+        <div class="actions-right">
+          <a href="/users/{{ user.id }}/edit" class="btn btn-primary">
+            ✏️ Düzenle
+          </a>
+
+          <form action="/users/{{ user.id }}/delete" method="POST" style="margin: 0;">
+            <button type="submit" class="btn btn-danger">
+              🗑️ Sil
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="detail-card" style="text-align: center; padding: 3.5rem 1.5rem;">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+      <h3 style="font-size: 1.4rem; color: var(--primary); margin-bottom: 0.5rem;">Kullanıcı Bulunamadı</h3>
+      <p style="color: var(--text-muted); margin-bottom: 2rem;">
+        Aradığınız kullanıcı bulunamadı veya sistemden silinmiş olabilir.
+      </p>
+      <a href="/users" class="btn btn-primary">
+        &larr; Mezunlar Listesine Dön
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

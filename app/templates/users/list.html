@@ -227,6 +227,24 @@
     font-size: 0.85rem;
   }
 
+  .btn-sm {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.825rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .btn-danger {
+    background-color: #dc2626;
+    color: #ffffff;
+    border: 1px solid #dc2626;
+  }
+
+  .btn-danger:hover {
+    background-color: #b91c1c;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
+  }
+
   /* Empty State */
   .empty-state {
     text-align: center;
@@ -396,6 +414,7 @@
                 <th>E-posta (Email)</th>
                 <th>Bölüm (Department)</th>
                 <th style="text-align: center; width: 140px;">Mezuniyet Yılı</th>
+                <th style="text-align: right; width: 220px;">İşlemler (Actions)</th>
               </tr>
             </thead>
             <tbody>
@@ -404,7 +423,11 @@
                 <td>
                   <span class="user-badge-id">#{{ u.id }}</span>
                 </td>
-                <td class="user-name-cell">{{ u.name }}</td>
+                <td class="user-name-cell">
+                  <a href="/users/{{ u.id }}" style="color: var(--primary); text-decoration: underline;">
+                    {{ u.name }}
+                  </a>
+                </td>
                 <td>
                   <a href="mailto:{{ u.email }}" style="color: var(--info); text-decoration: underline;">
                     {{ u.email }}
@@ -415,6 +438,21 @@
                 </td>
                 <td style="text-align: center;">
                   <span class="user-year-badge">{{ u.graduation_year }}</span>
+                </td>
+                <td style="text-align: right; white-space: nowrap;">
+                  <div style="display: inline-flex; gap: 0.4rem; align-items: center; justify-content: flex-end;">
+                    <a href="/users/{{ u.id }}" class="btn btn-outline btn-sm">
+                      Görüntüle
+                    </a>
+                    <a href="/users/{{ u.id }}/edit" class="btn btn-outline btn-sm">
+                      Düzenle
+                    </a>
+                    <form action="/users/{{ u.id }}/delete" method="POST" style="margin: 0; display: inline;">
+                      <button type="submit" class="btn btn-danger btn-sm">
+                        Sil
+                      </button>
+                    </form>
+                  </div>
                 </td>
               </tr>
               {% endfor %}

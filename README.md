@@ -20,7 +20,7 @@ Bu ilk aşamada; FastAPI tabanlı modern, özgün ve responsive bir açılış s
 4. [MVC Architecture](#-mvc-architecture)
 5. [Kullanıcı Modeli & Bellek İçi CRUD Servisi](#-kullanıcı-modeli--bellek-içi-crud-servisi)
 6. [User Controllers (UserController & ApiUserController)](#-user-controllers-usercontroller--apiusercontroller)
-7. [View Katmanı & Kullanıcı Yönetim Sayfaları (View Layer)](#-view-katmanı--kullanıcı-yönetim-sayfaları-view-layer)
+7. [View Katmanı & Tam Web Kullanıcı CRUD İşlemleri (View Layer)](#-view-katmanı--tam-web-kullanıcı-crud-işlemleri-view-layer)
 8. [Project Directory Structure](#-project-directory-structure)
 9. [Uç Noktalar (Endpoints) & Swagger UI](#-uç-noktalar-endpoints--swagger-ui)
 10. [Yerel Kurulum ve Çalıştırma](#-yerel-kurulum-ve-çalıştırma)
@@ -185,11 +185,14 @@ FastAPI rota modülleri, ilgili controller sınıflarına bağlanarak katmanlar 
 | :--- | :--- | :--- | :--- | :--- |
 | `/` | `GET` | `UserController` | `get_users()` | Ana sayfa (Landing Page) arayüzü ve mezun listesi |
 | `/about` | `GET` | - | - | Proje hakkında sayfası |
-| `/users` | `GET` | `UserController` | `get_users()` | Web arayüzü kullanıcı listeleme |
-| `/users` | `POST` | `UserController` | `create_user()` | Web arayüzü kullanıcı oluşturma |
-| `/users/{id}` | `GET` | `UserController` | `get_user(id)` | Web arayüzü kullanıcı detayı |
-| `/users/{id}` | `PUT` | `UserController` | `update_user(id, ...)` | Web arayüzü kullanıcı güncelleme |
-| `/users/{id}` | `DELETE` | `UserController` | `delete_user(id)` | Web arayüzü kullanıcı silme |
+| `/users` | `GET` | `UserController` | `get_users()` | Web arayüzü kullanıcı listeleme (Listings / Read) |
+| `/users` | `POST` | `UserController` | `create_user()` | Web arayüzü form ile kullanıcı oluşturma (Creating / Create) |
+| `/users/{id}` | `GET` | `UserController` | `get_user(id)` | Web arayüzü kullanıcı detay sayfası (Read Single) |
+| `/users/{id}/edit` | `GET` | `UserController` | `get_user(id)` | Web arayüzü kullanıcı düzenleme formu sayfası |
+| `/users/{id}/edit` | `POST` | `UserController` | `update_user(id, ...)` | Web formu ile kullanıcı güncelleme (Update) |
+| `/users/{id}` | `PUT` | `UserController` | `update_user(id, ...)` | Web kullanıcı güncelleme (PUT / JSON & Form) |
+| `/users/{id}/delete` | `POST` | `UserController` | `delete_user(id)` | Web formu ile kullanıcı silme (Delete) |
+| `/users/{id}` | `DELETE` | `UserController` | `delete_user(id)` | Web kullanıcı silme (DELETE) |
 | `/api/users` | `GET` | `ApiUserController` | `get_users()` | REST API: Tüm kullanıcıları listeleme |
 | `/api/users` | `POST` | `ApiUserController` | `create_user(...)` | REST API: Yeni kullanıcı oluşturma (201 Created) |
 | `/api/users/{id}` | `GET` | `ApiUserController` | `get_user(id)` | REST API: ID ile tekil kullanıcı sorgulama |
@@ -213,19 +216,19 @@ REST API uç noktalarında tip güvenliği ve otomatik OpenAPI/Swagger dokümant
 
 ---
 
-## 🖥 View Katmanı & Kullanıcı Yönetim Sayfaları (View Layer)
+## 🖥 View Katmanı & Tam Web Kullanıcı CRUD İşlemleri (View Layer)
 
-MVC mimarisinin **View (Görünüm)** katmanı, sunucu tarafında oluşturulan (server-side rendered) Jinja2 HTML şablonları ve statik varlıklar (CSS/JS) ile hayata geçirilmiştir. Bu aşamada kullanıcıların doğrudan tarayıcı üzerinden mezunları görüntüleyebileceği (**Listings / Read**) ve yeni mezun ekleyebileceği (**Creating / Create**) iki temel web rotası View katmanına bağlanmıştır.
+MVC mimarisinin **View (Görünüm)** katmanı, sunucu tarafında oluşturulan (server-side rendered) Jinja2 HTML şablonları (`app/templates/`) ve statik varlıklar (CSS/JS) ile hayata geçirilmiştir. Kullanıcıların doğrudan tarayıcı üzerinden mezunları listeleyebileceği, tekil mezun profilini inceleyebileceği, yeni mezun ekleyebileceği, mevcut bilgileri güncelleyebileceği ve mezun kaydını silebileceği tam kapsamlı **Web User CRUD akışı** tamamlanmıştır.
 
-### 🔄 Mimari Veri ve Kontrol Akışı (Route ➔ Controller ➔ Service ➔ View)
-Sorumlulukların ayrılması (*Separation of Concerns*) prensibine tam bağlı kalınarak rotalar doğrudan servis veya model ile iletişim kurmaz:
+### 🔄 Mimari Veri ve Kontrol Akışı (Web Route ➔ UserController ➔ UserService ➔ Jinja2 View)
+Sorumlulukların ayrılması (*Separation of Concerns*) prensibine tam bağlı kalınarak rotalar doğrudan servis veya model ile iletişim kurmaz; tüm web CRUD işlemleri şu hiyerarşik akışı izler:
 
 ```
 İstemci / Tarayıcı (Browser)
-       │ (1. HTTP İsteği: GET /users veya POST /users)
+       │ (1. HTTP İsteği: GET, POST, PUT, DELETE)
        ▼
 1. Web Rotaları Katmanı [app/api/web_routes.py]
-       │ (2. İstek parametrelerini veya form verisini ayrıştırır)
+       │ (2. İstek parametrelerini, URL değişkenlerini veya form verilerini ayrıştırır)
        ▼
 2. Controller Katmanı [UserController - app/controllers/user_controller.py]
        │ (3. İşlemi servis katmanına delege eder)
@@ -234,38 +237,80 @@ Sorumlulukların ayrılması (*Separation of Concerns*) prensibine tam bağlı k
        │ (4. Bellek içi veriyi işler ve sonucu Controller'a döner)
        ▲ (5. Controller standart sonucu Web Rotasına aktarır)
        ▼
-4. View / Sunum Katmanı [Jinja2 Templates - app/templates/users/list.html]
-       │ (6. Context verisiyle HTML şablonunu oluşturur)
+4. View / Sunum Katmanı [Jinja2 Templates - app/templates/users/*.html]
+       │ (6. Context verisi ve durum mesajlarıyla HTML şablonunu oluşturur)
        ▼
-İstemciye Yanıt (Render Edilmiş HTML Sayfası)
+İstemciye Yanıt (Render Edilmiş HTML Sayfası veya JSON)
 ```
 
-### 📋 Web View Rotaları
+### 📊 Web User CRUD İşlem Tablosu
 
-#### 1. `GET /users` ➔ Kullanıcı Listeleme (Listings / Read)
+| Operasyon (CRUD) | HTTP Metodu | Rota (Route) | Sorumlu Controller | View / Şablon | Açıklama |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **CREATE** | `POST` | `/users` | `UserController.create_user()` | `users/list.html` | Form veya JSON ile yeni mezun kaydı oluşturur, başarı mesajıyla listeyi gösterir. |
+| **READ (List)** | `GET` | `/users` | `UserController.get_users()` | `users/list.html` | Tüm mezunları tablo halinde listeler; detay, düzenle ve sil butonları sunar. |
+| **READ (Single)** | `GET` | `/users/{id}` | `UserController.get_user()` | `users/detail.html` | Tekil mezun profil kartını görüntüler; düzenle, sil ve listeye dön bağlantıları içerir. |
+| **UPDATE (Form)** | `GET` | `/users/{id}/edit` | `UserController.get_user()` | `users/edit.html` | Mevcut mezun bilgileriyle önceden doldurulmuş düzenleme formunu sunar (Yoksa 404). |
+| **UPDATE (Submit)** | `POST` / `PUT` | `/users/{id}/edit`<br>`/users/{id}` | `UserController.update_user()` | `users/detail.html`<br>`users/edit.html` | Güncellenen bilgileri kaydeder; başarılıysa detay sayfasına, hata durumunda düzenleme formuna döner. |
+| **DELETE** | `POST` / `DELETE` | `/users/{id}/delete`<br>`/users/{id}` | `UserController.delete_user()` | `users/list.html` | Mezun kaydını siler ve başarı mesajıyla güncel listeyi gösterir (Yoksa 404). |
+
+---
+
+### 📋 CRUD Operasyonlarının Detaylı İşleyişi
+
+#### 1. CREATE ➔ Yeni Mezun Kaydı Oluşturma (`POST /users`)
+- **Sorumlu Rota:** `app/api/web_routes.py` -> `create_web_user()`
+- **Sorumlu Controller:** `UserController.create_user(payload)`
+- **Kullanılan Şablon (View):** `app/templates/users/list.html`
+- **Form Alanları:** `name` (Zorunlu metin), `email` (Zorunlu e-posta), `department` (Zorunlu bölüm), `graduation_year` (1900-2100 arası sayı).
+- **İşleyiş:**
+  - Form verileri (`application/x-www-form-urlencoded`) veya JSON yükü ayrıştırılır.
+  - `graduation_year` tamsayıya çevrilerek `UserController.create_user(...)` çağrılır.
+  - **Başarılı Durumda:** Yeni kullanıcı oluşturulur, güncel kullanıcı listesi ve yeşil başarı bildirimi (`success_message: "Kullanıcı başarıyla oluşturuldu."`) ile liste sayfası render edilir (HTTP 200).
+  - **Doğrulama Hatasında:** Girdi eksik veya geçersizse kırmızı hata kutusu (`error_message`) ile liste sayfası ve form durumu render edilir (HTTP 400).
+  - **JSON İstemcisi Desteği:** İstemci `Accept: application/json` talep ederse standart `201 Created` JSON çıktısı döner.
+
+#### 2. READ (List) ➔ Mezunları Listeleme (`GET /users`)
 - **Sorumlu Rota:** `app/api/web_routes.py` -> `get_web_users()`
 - **Sorumlu Controller:** `UserController.get_users()`
 - **Kullanılan Şablon (View):** `app/templates/users/list.html`
 - **İşleyiş:**
   - `UserController.get_users()` çağrılarak bellekte saklanan tüm kullanıcılar alınır.
   - Alınan liste `users/list.html` Jinja2 şablonuna context verisi olarak aktarılır.
-  - Sayfada mezunların **Ad Soyad**, **E-posta**, **Bölüm** ve **Mezuniyet Yılı** bilgileri temiz ve responsive bir tabloda listelenir.
-  - Eğer henüz hiç kullanıcı eklenmemişse, kullanıcıyı bilgilendiren anlaşılır bir **"No users found"** boş durum mesajı görüntülenir.
+  - Sayfada mezunların **ID**, **Ad Soyad**, **E-posta**, **Bölüm** ve **Mezuniyet Yılı** bilgileri responsive bir tabloda listelenir.
+  - Tablodaki her kayıt için **İncele (`/users/{id}`)**, **Düzenle (`/users/{id}/edit`)** ve **Sil (`/users/{id}/delete`)** aksiyon butonları yer alır.
+  - Henüz hiç kullanıcı eklenmemişse **"No users found"** boş durum mesajı görüntülenir.
 
-#### 2. `POST /users` ➔ Kullanıcı Oluşturma (Creating / Create)
-- **Sorumlu Rota:** `app/api/web_routes.py` -> `create_web_user()`
-- **Sorumlu Controller:** `UserController.create_user(payload)`
-- **Kullanılan Şablon (View):** `app/templates/users/list.html`
-- **Form Alanları:**
-  - `name`: Kullanıcı / mezun tam adı (zorunlu metin alanı).
-  - `email`: İletişim e-posta adresi (zorunlu e-posta alanı).
-  - `department`: Mezun olunan / kayıtlı bölüm (zorunlu metin alanı).
-  - `graduation_year`: Mezuniyet yılı (zorunlu sayısal alan, 1900-2100).
+#### 3. READ (Single) ➔ Tekil Mezun Profil Detayı (`GET /users/{id}`)
+- **Sorumlu Rota:** `app/api/web_routes.py` -> `get_web_user(id)`
+- **Sorumlu Controller:** `UserController.get_user(id)`
+- **Kullanılan Şablon (View):** `app/templates/users/detail.html`
 - **İşleyiş:**
-  - HTML formundan gönderilen veriler (`application/x-www-form-urlencoded` veya `application/json`) ayrıştırılır.
-  - `graduation_year` değeri tamsayıya dönüştürülerek `UserController.create_user(...)` fonksiyonuna iletilir.
-  - **Başarılı Durumda:** Yeni kullanıcı oluşturulur, güncel kullanıcı listesi ve yeşil bildirim kutusu (`success_message: "Kullanıcı başarıyla oluşturuldu."`) ile liste sayfasına dönülür (HTTP 200).
-  - **Hata Durumunda:** Girdi doğrulaması başarısız olursa kullanıcıya anlaşılır bir hata bildirimi (`error_message`) gösterilerek aynı sayfa render edilir (HTTP 400).
+  - `UserController.get_user(id)` ile kullanıcı sorgulanır.
+  - **Kullanıcı Mevcutsa:** Kullanıcının tüm bilgileri kart biçiminde sunulur. Sayfa üzerinde **Düzenle (`/users/{id}/edit`)**, doğrudan onaylı **Sil (`/users/{id}/delete`)** formu ve **Mezunlar Listesine Dön (`/users`)** bağlantısı bulunur (HTTP 200).
+  - **Kullanıcı Bulunamazsa:** Şablon içerisinde "Kullanıcı Bulunamadı" hata mesajı gösterilir ve HTTP 404 durum kodu döndürülür.
+
+#### 4. UPDATE ➔ Mezun Bilgilerini Güncelleme
+- **Form Sayfası:** `GET /users/{id}/edit`
+  - **Sorumlu Controller:** `UserController.get_user(id)`
+  - **Kullanılan Şablon (View):** `app/templates/users/edit.html`
+  - Mevcut mezunun güncel verileri form alanlarına önceden doldurulmuş (`value="{{ user.name }}"` vb.) olarak getirilir. Kullanıcı bulunamazsa 404 hata şablonu render edilir.
+- **Form Gönderimi:** `POST /users/{id}/edit` veya `PUT /users/{id}`
+  - **Sorumlu Controller:** `UserController.update_user(id, ...)`
+  - Form verileri ayrıştırılır ve `UserController.update_user(id, ...)` çağrılır.
+  - **Başarılı Durumda:** Güncellenen kullanıcı verisiyle `users/detail.html` şablonu render edilir ve "Kullanıcı başarıyla güncellendi." bildirim kutusu gösterilir (HTTP 200).
+  - **Doğrulama Hatasında:** Geçersiz girdi varsa (örn. graduation_year < 1900), kullanıcının girdiği veriler formda korunarak `users/edit.html` şablonu hata mesajıyla render edilir (HTTP 400).
+  - **Kullanıcı Bulunamazsa:** 404 durum kodu ve kullanıcı bulunamadı mesajı döndürülür.
+
+#### 5. DELETE ➔ Mezun Kaydını Silme
+- **Tarayıcı Form Rotası:** `POST /users/{id}/delete`
+  - HTML formlarının `DELETE` metodunu doğrudan desteklememesi nedeniyle standart browser-friendly silme rotasıdır. Form submit edildiğinde `confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')` onayı alınır.
+  - **Sorumlu Controller:** `UserController.delete_user(id)`
+  - **Kullanılan Şablon (View):** `app/templates/users/list.html`
+  - **Başarılı Durumda:** Kullanıcı bellekten silinir ve liste sayfasına dönülerek "Kullanıcı #{id} başarıyla silindi." başarı mesajı gösterilir (HTTP 200).
+  - **Kullanıcı Bulunamazsa:** Liste şablonunda hata mesajı gösterilir (HTTP 404).
+- **HTTP DELETE Rotası:** `DELETE /users/{id}`
+  - AJAX/Fetch ve API istekleri için doğrudan `DELETE` HTTP metodu desteklenir.
 
 ---
 
@@ -313,7 +358,9 @@ alumni-tracking-system/
 │       ├── index.html             # Ana açılış sayfası (Landing Page)
 │       ├── about.html             # Proje hakkında sayfası
 │       └── users/                 # Kullanıcı yönetimi View şablonları
-│           └── list.html          # Kullanıcı listeleme ve ekleme formu View şablonu
+│           ├── list.html          # Kullanıcı listeleme ve ekleme formu View şablonu
+│           ├── detail.html        # Tekil kullanıcı profil detay View şablonu
+│           └── edit.html          # Kullanıcı düzenleme/güncelleme formu View şablonu
 ├── tests/                         # Birim ve entegrasyon test paketi
 │   ├── __init__.py                # Test paketi belirteci
 │   ├── test_api_user_controller.py # ApiUserController REST API CRUD birim testleri
@@ -333,7 +380,7 @@ alumni-tracking-system/
 #### 1. Ana Uygulama Klasörü (`app/`)
 - **`app/api/` (HTTP Rotaları):**  
   HTTP isteklerini yakalayan ve yönlendiren uç noktaları barındırır.
-  - **`app/api/web_routes.py`:** Jinja2 şablon motorunu kullanarak tarayıcıya HTML sayfalarını (`/` açılış sayfası, `/about` hakkında sayfası, `/users` mezunlar listesi ve oluşturma sayfası) sunar ve `/users` web rotalarını `UserController` üzerinden yönetir.
+  - **`app/api/web_routes.py`:** Jinja2 şablon motorunu kullanarak tarayıcıya HTML sayfalarını (`/` açılış sayfası, `/about` hakkında sayfası, `/users` mezunlar listesi, `/users/{id}` kullanıcı detayı, `/users/{id}/edit` kullanıcı düzenleme formu) sunar ve tüm `/users` web rotalarını `UserController` üzerinden yönetir.
   - **`app/api/test_routes.py`:** Katmanlı mimari işleyişini, Pydantic doğrulamasını ve servis katmanı entegrasyonunu doğrulamak için `/hello`, `/hello/{name}` ve `/sum/{a}/{b}` test uç noktalarını barındırır.
   - **`app/api/health_routes.py`:** Sistemin ve sunucunun ayakta olduğunu denetleyen `/api/health` sağlık kontrolü GET endpoint'ini (`{"status": "ok"}`) sunar.
   - **`app/api/user_routes.py`:** Kullanıcı REST API CRUD işlemlerini (`/api/users`, `/api/users/{id}`) `ApiUserController` üzerinden yönetir, Pydantic şemaları ile istek ve yanıtları doğrular.
@@ -362,6 +409,8 @@ alumni-tracking-system/
   - `index.html`: Modern ana açılış sayfası (Landing Page).
   - `about.html`: Proje ve katmanlı mimari hakkında sayfası.
   - `users/list.html`: Kullanıcı listesini (`GET /users`) görüntüleyen ve yeni kullanıcı oluşturma formunu (`POST /users`) barındıran View şablonu.
+  - `users/detail.html`: Tekil mezun/kullanıcı profil kartı ve detaylarını (`GET /users/{id}`) sunan View şablonu.
+  - `users/edit.html`: Önceden doldurulmuş kullanıcı güncelleme formunu (`GET /users/{id}/edit`) barındıran View şablonu.
 
 #### 2. Uygulama Giriş Noktası (`app/main.py`)
 - **`app/main.py`:**  
@@ -409,9 +458,12 @@ OpenAPI dokümantasyonunda uç noktalar mantıksal gruplara ayrılmıştır:
 | `GET` | `/about` | Web Pages | - | Proje & Mimari Hakkında Sayfası | `200 OK` (HTML) |
 | `GET` | `/users` | Web Pages | `UserController` | Web Mezunlar Listesi Sayfası (Listings / Read) | `200 OK` (HTML) |
 | `POST` | `/users` | Web Pages | `UserController` | Web Formu ile Kullanıcı Oluşturma (Creating / Create) | `200 OK` (HTML) |
-| `GET` | `/users/{id}` | Web Pages | `UserController` | Web Kullanıcı Detayı | `200 OK` (JSON) |
-| `PUT` | `/users/{id}` | Web Pages | `UserController` | Web Kullanıcı Güncelleme | `200 OK` (JSON) |
-| `DELETE` | `/users/{id}` | Web Pages | `UserController` | Web Kullanıcı Silme | `200 OK` (JSON) |
+| `GET` | `/users/{id}` | Web Pages | `UserController` | Web Kullanıcı Profil Detay Sayfası (Read Single) | `200 OK` (HTML) / `404` |
+| `GET` | `/users/{id}/edit` | Web Pages | `UserController` | Web Kullanıcı Düzenleme Formu (Update Form) | `200 OK` (HTML) / `404` |
+| `POST` | `/users/{id}/edit` | Web Pages | `UserController` | Web Formu ile Kullanıcı Güncelleme (Update Submit) | `200 OK` (HTML) / `400` / `404` |
+| `PUT` | `/users/{id}` | Web Pages | `UserController` | Web Kullanıcı Güncelleme (PUT) | `200 OK` (JSON / HTML) / `404` |
+| `POST` | `/users/{id}/delete` | Web Pages | `UserController` | Web Formu ile Kullanıcı Silme (Delete Form) | `200 OK` (HTML) / `404` |
+| `DELETE` | `/users/{id}` | Web Pages | `UserController` | Web Kullanıcı Silme (DELETE) | `200 OK` (JSON / HTML) / `404` |
 | `GET` | `/docs` | - | - | Swagger UI Dokümantasyonu (FastAPI otomatik sağlar) | `200 OK` (Swagger UI) |
 | `GET` | `/redoc` | - | - | ReDoc API Dokümantasyonu | `200 OK` (ReDoc) |
 | `GET` | `/api/health` | Health | - | Servis sağlık durum kontrolü | `200 OK` (`{"status": "ok"}`) |

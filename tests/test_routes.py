@@ -1,4 +1,4 @@
-"""Unit and integration tests for User, ApiUser, Web View, and Health routes via ASGI."""
+"""Unit and integration tests for User, ApiUser, Web View CRUD, and Health routes via ASGI."""
 
 import asyncio
 import json
@@ -12,7 +12,7 @@ from app.services.user_service import clear_users
 
 
 class TestRoutes(unittest.TestCase):
-    """Test suite verifying route-to-controller integration, View layer, and HTTP endpoints."""
+    """Test suite verifying route-to-controller integration, View layer CRUD, and HTTP endpoints."""
 
     def setUp(self):
         """Reset the in-memory user store before each test."""
@@ -266,6 +266,7 @@ class TestRoutes(unittest.TestCase):
         self.assertEqual(status_about, 200)
         self.assertIn("<!DOCTYPE html>", body_about)
 
+    # 1. READ - LIST
     def test_web_get_users_empty_state(self):
         """GET /users with no users should render HTML with 'No users found' message."""
         status_code, headers, html = self._run_request("GET", "/users")
@@ -274,14 +275,14 @@ class TestRoutes(unittest.TestCase):
         self.assertIn("<!DOCTYPE html>", html)
         self.assertIn("Alumni List", html)
         self.assertIn("No users found", html)
-        # Verify form elements exist
+        # Verify create user form elements exist
         self.assertIn('name="name"', html)
         self.assertIn('name="email"', html)
         self.assertIn('name="department"', html)
         self.assertIn('name="graduation_year"', html)
 
     def test_web_get_users_with_existing_users(self):
-        """GET /users with existing users should render table with user details."""
+        """GET /users with existing users should render table with user details and actions."""
         UserController.create_user(
             name="Ece Bilgin",
             email="ece@alumni.istanbul.edu.tr",
@@ -297,7 +298,12 @@ class TestRoutes(unittest.TestCase):
         self.assertIn("Matematik", html)
         self.assertIn("2021", html)
         self.assertNotIn("No users found", html)
+        # Verify action links exist
+        self.assertIn('href="/users/1"', html)
+        self.assertIn('href="/users/1/edit"', html)
+        self.assertIn('action="/users/1/delete"', html)
 
+    # 2. CREATE
     def test_web_post_users_form_submission(self):
         """POST /users with urlencoded form should create user and return updated list View."""
         form_payload = {
@@ -364,35 +370,282 @@ class TestRoutes(unittest.TestCase):
         self.assertIn("text/html", headers.get("content-type", ""))
         self.assertIn("alert-error", html)
 
-    def test_web_user_id_operations(self):
-        """Web routes /users/{id} for GET, PUT, and DELETE should delegate to UserController."""
+    # 3. READ - SINGLE USER (DETAIL)
+    def test_web_get_user_detail_existing(self):
+        """GET /users/{id} for existing user should render detail View with user profile."""
         create_res = UserController.create_user(
-            name="Murat Kurt",
-            email="murat@test.com",
+            name="Hande Demir",
+            email="hande@alumni.istanbul.edu.tr",
+            department="Psikoloji",
+            graduation_year=2021,
+        )
+        user_id = create_res["user"].id
+
+        status_code, headers, html = self._run_request("GET", f"/users/{user_id}")
+        self.assertEqual(status_code, 200)
+        self.assertIn("text/html", headers.get("content-type", ""))
+        self.assertIn("Hande Demir", html)
+        self.assertIn("hande@alumni.istanbul.edu.tr", html)
+        self.assertIn("Psikoloji", html)
+        self.assertIn("2021", html)
+        # Verify navigation and action links
+        self.assertIn('href="/users"', html)
+        self.assertIn(f'href="/users/{user_id}/edit"', html)
+        self.assertIn(f'action="/users/{user_id}/delete"', html)
+
+    def test_web_get_user_detail_missing(self):
+        """GET /users/{id} for non-existent user should return 404 with not-found View."""
+        status_code, headers, html = self._run_request("GET", "/users/999")
+        self.assertEqual(status_code, 404)
+        self.assertIn("text/html", headers.get("content-type", ""))
+        self.assertIn("Kullanıcı Bulunamadı", html)
+
+    # 4. UPDATE - EDIT FORM & POST
+    def test_web_get_user_edit_form_existing(self):
+        """GET /users/{id}/edit for existing user should render pre-filled edit form."""
+        create_res = UserController.create_user(
+            name="Kemal Sunal",
+            email="kemal@alumni.istanbul.edu.tr",
+            department="İletişim",
+            graduation_year=2019,
+        )
+        user_id = create_res["user"].id
+
+        status_code, headers, html = self._run_request("GET", f"/users/{user_id}/edit")
+        self.assertEqual(status_code, 200)
+        self.assertIn("text/html", headers.get("content-type", ""))
+        self.assertIn('value="Kemal Sunal"', html)
+        self.assertIn('value="kemal@alumni.istanbul.edu.tr"', html)
+        self.assertIn('value="İletişim"', html)
+        self.assertIn('value="2019"', html)
+        self.assertIn(f'action="/users/{user_id}/edit"', html)
+
+    def test_web_get_user_edit_form_missing(self):
+        """GET /users/{id}/edit for missing user should return 404 not-found View."""
+        status_code, headers, html = self._run_request("GET", "/users/999/edit")
+        self.assertEqual(status_code, 404)
+        self.assertIn("text/html", headers.get("content-type", ""))
+        self.assertIn("Kullanıcı Bulunamadı", html)
+
+    def test_web_update_user_form_post(self):
+        """POST /users/{id}/edit should update user and render detail View with success message."""
+        create_res = UserController.create_user(
+            name="Zeynep Kaya",
+            email="zeynep@old.com",
+            department="Sosyoloji",
+            graduation_year=2020,
+        )
+        user_id = create_res["user"].id
+
+        update_payload = {
+            "name": "Zeynep Kaya",
+            "email": "zeynep@new.com",
+            "department": "Felsefe",
+            "graduation_year": "2021",
+        }
+        status_code, headers, html = self._run_request(
+            "POST",
+            f"/users/{user_id}/edit",
+            body=update_payload,
+            headers={"content-type": "application/x-www-form-urlencoded"},
+        )
+        self.assertEqual(status_code, 200)
+        self.assertIn("text/html", headers.get("content-type", ""))
+        self.assertIn("Kullanıcı başarıyla güncellendi", html)
+        self.assertIn("zeynep@new.com", html)
+        self.assertIn("Felsefe", html)
+        self.assertIn("2021", html)
+
+        # Verify update persists in detail view
+        get_status, _, get_html = self._run_request("GET", f"/users/{user_id}")
+        self.assertEqual(get_status, 200)
+        self.assertIn("zeynep@new.com", get_html)
+        self.assertIn("Felsefe", get_html)
+
+    def test_web_update_user_put(self):
+        """PUT /users/{id} should update user and return JSON when requested."""
+        create_res = UserController.create_user(
+            name="Burak Çelik",
+            email="burak@test.com",
             department="Jeoloji",
             graduation_year=2020,
         )
         user_id = create_res["user"].id
 
-        # GET /users/{id}
-        status_get, _, data_get = self._run_request("GET", f"/users/{user_id}")
-        self.assertEqual(status_get, 200)
-        self.assertTrue(data_get["success"])
-        self.assertEqual(data_get["user"]["name"], "Murat Kurt")
-
-        # PUT /users/{id}
         status_put, _, data_put = self._run_request(
-            "PUT", f"/users/{user_id}", body={"department": "Jeofizik"}
+            "PUT",
+            f"/users/{user_id}",
+            body={"department": "Jeofizik"},
+            headers={"accept": "application/json"},
         )
         self.assertEqual(status_put, 200)
         self.assertTrue(data_put["success"])
         self.assertEqual(data_put["user"]["department"], "Jeofizik")
 
-        # DELETE /users/{id}
-        status_del, _, data_del = self._run_request("DELETE", f"/users/{user_id}")
+    def test_web_update_user_missing(self):
+        """Updating non-existent user should return 404."""
+        status_code, _, _ = self._run_request(
+            "POST",
+            "/users/999/edit",
+            body={"name": "Ghost", "email": "ghost@ghost.com", "department": "CS", "graduation_year": 2024},
+            headers={"content-type": "application/x-www-form-urlencoded"},
+        )
+        self.assertEqual(status_code, 404)
+
+        status_put, _, data_put = self._run_request(
+            "PUT",
+            "/users/999",
+            body={"department": "Physics"},
+            headers={"accept": "application/json"},
+        )
+        self.assertEqual(status_put, 404)
+        self.assertFalse(data_put["success"])
+
+    def test_web_update_user_validation_error(self):
+        """POST /users/{id}/edit with invalid data should return 400 edit View."""
+        create_res = UserController.create_user(
+            name="Ozan Mert",
+            email="ozan@test.com",
+            department="İktisat",
+            graduation_year=2018,
+        )
+        user_id = create_res["user"].id
+
+        status_code, _, html = self._run_request(
+            "POST",
+            f"/users/{user_id}/edit",
+            body={"name": "Ozan Mert", "email": "ozan@test.com", "department": "İktisat", "graduation_year": 1850},
+            headers={"content-type": "application/x-www-form-urlencoded"},
+        )
+        self.assertEqual(status_code, 400)
+        self.assertIn("alert-error", html)
+
+    # 5. DELETE
+    def test_web_delete_user_form_post(self):
+        """POST /users/{id}/delete should delete user and render list View with success message."""
+        create_res = UserController.create_user(
+            name="Gizem Kurt",
+            email="gizem@alumni.istanbul.edu.tr",
+            department="Hukuk",
+            graduation_year=2022,
+        )
+        user_id = create_res["user"].id
+
+        status_code, headers, html = self._run_request(
+            "POST",
+            f"/users/{user_id}/delete",
+        )
+        self.assertEqual(status_code, 200)
+        self.assertIn("text/html", headers.get("content-type", ""))
+        self.assertIn("başarıyla silindi", html)
+
+        # Subsequent GET should return 404
+        get_status, _, _ = self._run_request("GET", f"/users/{user_id}")
+        self.assertEqual(get_status, 404)
+
+    def test_web_delete_user_http_delete(self):
+        """DELETE /users/{id} should delete user and return JSON when requested."""
+        create_res = UserController.create_user(
+            name="Tuna Demir",
+            email="tuna@test.com",
+            department="Tıp",
+            graduation_year=2020,
+        )
+        user_id = create_res["user"].id
+
+        status_del, _, data_del = self._run_request(
+            "DELETE",
+            f"/users/{user_id}",
+            headers={"accept": "application/json"},
+        )
         self.assertEqual(status_del, 200)
         self.assertTrue(data_del["success"])
         self.assertIn("deleted successfully", data_del["message"])
+
+    def test_web_delete_user_missing(self):
+        """Deleting non-existent user should return 404."""
+        status_post, _, html = self._run_request("POST", "/users/999/delete")
+        self.assertEqual(status_post, 404)
+        self.assertTrue("not found" in html.lower() or "bulunamadı" in html.lower())
+
+        status_del, _, data_del = self._run_request(
+            "DELETE",
+            "/users/999",
+            headers={"accept": "application/json"},
+        )
+        self.assertEqual(status_del, 404)
+        self.assertFalse(data_del["success"])
+
+    # 6. FULL CRUD LIFECYCLE
+    def test_web_crud_full_lifecycle(self):
+        """Verifies complete Create -> Read -> Update -> Delete flow through Web Views."""
+        # Step 1: Create user via form
+        create_payload = {
+            "name": "Arda Güler",
+            "email": "arda@alumni.istanbul.edu.tr",
+            "department": "Spor Bilimleri",
+            "graduation_year": "2023",
+        }
+        create_status, _, create_html = self._run_request(
+            "POST",
+            "/users",
+            body=create_payload,
+            headers={"content-type": "application/x-www-form-urlencoded"},
+        )
+        self.assertEqual(create_status, 200)
+        self.assertIn("Arda Güler", create_html)
+
+        # Step 2: Read list
+        list_status, _, list_html = self._run_request("GET", "/users")
+        self.assertEqual(list_status, 200)
+        self.assertIn("Arda Güler", list_html)
+        self.assertIn("Spor Bilimleri", list_html)
+
+        # Step 3: Read single detail
+        detail_status, _, detail_html = self._run_request("GET", "/users/1")
+        self.assertEqual(detail_status, 200)
+        self.assertIn("Arda Güler", detail_html)
+        self.assertIn("arda@alumni.istanbul.edu.tr", detail_html)
+
+        # Step 4: Read edit form
+        edit_status, _, edit_html = self._run_request("GET", "/users/1/edit")
+        self.assertEqual(edit_status, 200)
+        self.assertIn('value="Arda Güler"', edit_html)
+
+        # Step 5: Update via edit form
+        update_payload = {
+            "name": "Arda Güler",
+            "email": "arda.real@alumni.istanbul.edu.tr",
+            "department": "Antrenörlük",
+            "graduation_year": "2024",
+        }
+        update_status, _, update_html = self._run_request(
+            "POST",
+            "/users/1/edit",
+            body=update_payload,
+            headers={"content-type": "application/x-www-form-urlencoded"},
+        )
+        self.assertEqual(update_status, 200)
+        self.assertIn("arda.real@alumni.istanbul.edu.tr", update_html)
+        self.assertIn("Antrenörlük", update_html)
+
+        # Step 6: Verify updated detail
+        detail2_status, _, detail2_html = self._run_request("GET", "/users/1")
+        self.assertEqual(detail2_status, 200)
+        self.assertIn("arda.real@alumni.istanbul.edu.tr", detail2_html)
+
+        # Step 7: Delete user
+        del_status, _, del_html = self._run_request("POST", "/users/1/delete")
+        self.assertEqual(del_status, 200)
+        self.assertIn("başarıyla silindi", del_html)
+
+        # Step 8: Verify user removed from list and detail
+        final_list_status, _, final_list_html = self._run_request("GET", "/users")
+        self.assertEqual(final_list_status, 200)
+        self.assertIn("No users found", final_list_html)
+
+        final_detail_status, _, _ = self._run_request("GET", "/users/1")
+        self.assertEqual(final_detail_status, 404)
 
     # -------------------------------------------------------------------------
     # Existing Routes Integrity Check
