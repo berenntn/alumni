@@ -19,11 +19,12 @@ Bu ilk aşamada; FastAPI tabanlı modern, özgün ve responsive bir açılış s
 3. [Katmanlı Mimari (Layered Architecture)](#-katmanlı-mimari-layered-architecture)
 4. [MVC Architecture](#-mvc-architecture)
 5. [Kullanıcı Modeli & Bellek İçi CRUD Servisi](#-kullanıcı-modeli--bellek-içi-crud-servisi)
-6. [Project Directory Structure](#-project-directory-structure)
-7. [Uç Noktalar (Endpoints)](#-uç-noktalar-endpoints)
-8. [Yerel Kurulum ve Çalıştırma](#-yerel-kurulum-ve-çalıştırma)
-9. [Docker ve Docker Compose ile Çalıştırma](#-docker-ve-docker-compose-ile-çalıştırma)
-10. [Gelecek Aşamalar (Roadmap)](#-gelecek-aşamalar-roadmap)
+6. [User Controllers (UserController & ApiUserController)](#-user-controllers-usercontroller--apiusercontroller)
+7. [Project Directory Structure](#-project-directory-structure)
+8. [Uç Noktalar (Endpoints)](#-uç-noktalar-endpoints)
+9. [Yerel Kurulum ve Çalıştırma](#-yerel-kurulum-ve-çalıştırma)
+10. [Docker ve Docker Compose ile Çalıştırma](#-docker-ve-docker-compose-ile-çalıştırma)
+11. [Gelecek Aşamalar (Roadmap)](#-gelecek-aşamalar-roadmap)
 
 ---
 
@@ -100,10 +101,10 @@ Bununla birlikte, sorumlulukların ayrılması (*Separation of Concerns*) prensi
   Veri modellerini ve veritabanı şemalarını temsil eder. SQLAlchemy ORM modelleri bu klasör altında tanımlanır. Verinin yapısını, tabloları, sütunları ve ilişkileri yöneten kalıcılık (persistence) katmanıdır.
 - **View (`app/templates/` ve `app/static/`):**  
   Kullanıcıya sunulan arayüz ve sunum katmanıdır. `app/templates/` altındaki Jinja2 HTML şablonları (`index.html`, `about.html`, `base.html`) dinamik web sayfalarını üretir; `app/static/` altındaki CSS ve JavaScript dosyaları ise arayüz stilini ve istemci taraflı etkileşimleri sağlar. REST API uç noktalarında ise istemciye döndürülen standart JSON formatı veri sunum katmanı (View) olarak işlev görür.
-- **Controller / API Routes (`app/api/`):**  
-  İstemciden gelen HTTP isteklerini (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) karşılayan, rota parametrelerini doğrulayan ve isteği uygun servis katmanına veya HTML şablonuna yönlendiren kontrol katmanıdır (`web_routes.py`, `test_routes.py`, `health_routes.py`, `user_routes.py`).
+- **Controller (`app/controllers/`) & API Routes (`app/api/`):**  
+  İstemciden gelen HTTP isteklerini (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) karşılayan, rota parametrelerini doğrulayan ve isteği uygun servis katmanına veya HTML şablonuna yönlendiren kontrol katmanıdır (`web_routes.py`, `test_routes.py`, `health_routes.py`, `user_routes.py`, `UserController`, `ApiUserController`).
 - **Service Layer (`app/services/`):**  
-  İş mantığının (Business Logic) yürütüldüğü katmandır. Rotaların (controller) hafif ve temiz kalmasını sağlayarak hesaplama, doğrulama ve iş kurallarını bağımsız olarak yürütür (örneğin `CalculatorService`).
+  İş mantığının (Business Logic) yürütüldüğü katmandır. Rotaların (controller) hafif ve temiz kalmasını sağlayarak hesaplama, doğrulama ve iş kurallarını bağımsız olarak yürütür (örneğin `CalculatorService`, `UserService`).
 - **Core / Configuration (`app/core/`):**  
   Uygulamanın merkezi ortam yapılandırmalarını (`config.py`) ve SQLAlchemy motoru ile veritabanı oturum yönetimini (`database.py`) barındıran altyapı katmanıdır.
 - **Application Entry Point (`app/main.py`):**  
@@ -111,7 +112,7 @@ Bununla birlikte, sorumlulukların ayrılması (*Separation of Concerns*) prensi
 
 > [!IMPORTANT]
 > **Kullanıcı Endpoint'leri Simülasyon Durumu (Mock/Test JSON):**  
-> Controller katmanında yer alan `app/api/user_routes.py` dosyasındaki `GET`, `PUT`, `PATCH` ve `DELETE` `/api/users/{id}` endpoint'leri şu an **veritabanı üzerinde gerçek bir CRUD işlemi gerçekleştirmemektedir**. Katmanlı mimarinin HTTP metotlarını ve yönlendirme mantığını test etmek amacıyla statik/örnek JSON yanıtları (`{"id": id, "method": "...", "status": "..."}`) döndürmektedir.
+> Controller katmanında yer alan `app/api/user_routes.py` dosyasındaki `GET`, `PUT`, `PATCH` ve `DELETE` `/api/users/{id}` endpoint'leri geriye dönük uyumluluk için statik/örnek JSON yanıtları (`{"id": id, "method": "...", "status": "..."}`) döndürmeye devam etmektedir. Gerçek CRUD mantığı ise `app/controllers/` altında `UserController` ve `ApiUserController` sınıfları aracılığıyla `UserService`'e delege edilerek yürütülmektedir.
 
 ---
 
@@ -145,6 +146,41 @@ Kullanıcı verileri geçici olarak bellek içinde basit bir Python veri yapıs�
 
 ---
 
+## 🎮 User Controllers (UserController & ApiUserController)
+
+MVC mimarisinde Controller bileşeni, kullanıcı/istemci isteklerini karşılayarak iş mantığı ve model katmanıyla aradaki koordinasyonu sağlar. Bu aşamada kullanıcı işlemleri için sorumlulukları net olarak ayrılmış iki farklı controller sınıfı hayata geçirilmiştir:
+
+### 1. UserController (`app/controllers/user_controller.py`)
+Genel ve web arayüzüne yönelik kullanıcı işlemlerini yöneten controller katmanıdır:
+- **Sorumluluk Alanı:** Web/Jinja2 şablon sunumuna yönelik iş akışları, web portalı kullanıcı koordinasyonu.
+- **CRUD Metotları:**
+  - `create_user(...)`: Yeni kullanıcı oluşturur, web durum ve sonuç sözlüğü döner (`{"success": True, "message": "...", "user": ...}`).
+  - `get_user(user_id)`: Tekil kullanıcıyı sorgular (`{"success": True, "user": ...}`). Bulunamazsa `success=False` döner.
+  - `get_users()`: Tüm kullanıcıları web arayüzü listelemesine uygun olarak döner (`{"success": True, "users": [...], "count": N}`).
+  - `update_user(user_id, ...)`: Kullanıcı bilgilerini günceller ve güncel sonucu döner.
+  - `delete_user(user_id)`: Kullanıcıyı siler ve başarı durumunu döner.
+
+### 2. ApiUserController (`app/controllers/api_user_controller.py`)
+REST API istemcilerine (mobil uygulamalar, harici servisler veya AJAX/fetch istekleri) yönelik kullanıcı işlemlerini yöneten controller katmanıdır:
+- **Sorumluluk Alanı:** JSON tabanlı RESTful API uç noktaları için girdi/çıktı biçimlendirmesi ve durum yönetimi.
+- **CRUD Metotları:**
+  - `create_user(...)`: API standardında serileştirilmiş JSON çıktısı döner (`{"status": "success", "data": {...}, "message": "..."}`).
+  - `get_user(user_id)`: İlgili kullanıcıyı serileştirilmiş veriyle döner (`{"status": "success", "data": {...}}`); bulunamazsa hata durumunu raporlar (`{"status": "error", ...}`).
+  - `get_users()`: Tüm kullanıcıları serileştirilmiş liste olarak döner (`{"status": "success", "data": [...], "count": N}`).
+  - `update_user(user_id, ...)`: Kullanıcıyı günceller ve güncellenmiş API veri nesnesini döner.
+  - `delete_user(user_id)`: Kullanıcıyı siler ve API başarı/hata durumunu döner.
+
+### 3. Controller ve UserService İşbirliği (Delegation Pattern)
+- **Mantık Tekrarının Önlenmesi:** Her iki controller sınıfı da veritabanı veya bellek içi veri saklama mantığını kendi içerisinde **kesinlikle tekrarlamaz**.
+- **Servis Katmanına Delegasyon:** Tüm CRUD işlemleri, veri saklama ve model doğrulama adımları için doğrudan `UserService` (`app/services/user_service.py`) çağrılır.
+- **Bağımsızlık & Test Edilebilirlik:** Controller'lar saf Python sınıfları olarak tasarlanmıştır ve herhangi bir veritabanı bağlantısı gerektirmeksizin birim testlerle (`tests/test_user_controller.py` ve `tests/test_api_user_controller.py`) tamamen doğrulanmıştır.
+
+### 4. Bellek İçi Saklama & Veritabanı Durumu
+> [!NOTE]
+> Proje bu aşamada halen **in-memory (bellek içi)** veri saklama yapısını (`Dict[int, User]`) kullanmaya devam etmektedir. PostgreSQL veya SQLAlchemy veritabanı bağlantısı henüz eklenmemiştir ve sonraki aşamalarda entegre edilecektir.
+
+---
+
 ## 📂 Project Directory Structure
 
 Projede yer alan gerçek dizin ve dosya yapısı aşağıda gösterilmektedir:
@@ -154,12 +190,16 @@ alumni-tracking-system/
 ├── app/
 │   ├── __init__.py                # Uygulama paket modülü belirteci
 │   ├── main.py                    # FastAPI uygulama örneği ve router kayıtları (Giriş Noktası)
-│   ├── api/                       # Controller Katmanı: HTTP rotaları ve uç noktalar
+│   ├── api/                       # HTTP rotaları ve uç noktalar
 │   │   ├── __init__.py
 │   │   ├── health_routes.py       # Sistem sağlık kontrolü rotası (/api/health)
 │   │   ├── test_routes.py         # Test ve hesaplama uç noktaları (/hello, /sum)
-│   │   ├── user_routes.py         # Kullanıcı simülasyon rotaları (/api/users/{id})
+│   │   ├── user_routes.py         # Kullanıcı simülasyon ve ApiUserController rotaları
 │   │   └── web_routes.py          # Web sayfaları HTML şablon rotaları (/ ve /about)
+│   ├── controllers/               # Controller Katmanı: MVC Controller sınıfları
+│   │   ├── __init__.py            # Controller paket belirteci ve export listesi
+│   │   ├── api_user_controller.py # REST API kullanıcı CRUD controller'ı
+│   │   └── user_controller.py     # Web/Genel kullanıcı CRUD controller'ı
 │   ├── core/                      # Temel konfigürasyon ve veritabanı altyapısı
 │   │   ├── __init__.py
 │   │   ├── config.py              # Pydantic BaseSettings ortam ayarları
@@ -185,6 +225,8 @@ alumni-tracking-system/
 │       └── about.html             # Proje hakkında sayfası
 ├── tests/                         # Birim test paketi
 │   ├── __init__.py                # Test paketi belirteci
+│   ├── test_api_user_controller.py # ApiUserController REST API CRUD birim testleri
+│   ├── test_user_controller.py    # UserController web CRUD birim testleri
 │   └── test_user_service.py       # User modeli ve bellek içi CRUD servisi birim testleri
 ├── Dockerfile                     # Python 3.11 konteyner ortam tanımı
 ├── docker-compose.yml             # Web ve PostgreSQL servislerinin orkestrasyonu
@@ -197,12 +239,16 @@ alumni-tracking-system/
 ### 📁 Klasör ve Dosyaların Görevleri
 
 #### 1. Ana Uygulama Klasörü (`app/`)
-- **`app/api/` (Controller / API Routes):**  
+- **`app/api/` (HTTP Rotaları):**  
   HTTP isteklerini yakalayan ve yönlendiren uç noktaları barındırır.
   - **`app/api/web_routes.py`:** Jinja2 şablon motorunu kullanarak tarayıcıya HTML sayfalarını (`/` açılış sayfası ve `/about` hakkında sayfası) sunan web yönlendirmesidir.
   - **`app/api/test_routes.py`:** Katmanlı mimari işleyişini, Pydantic doğrulamasını ve servis katmanı entegrasyonunu doğrulamak için `/hello`, `/hello/{name}` ve `/sum/{a}/{b}` test uç noktalarını barındırır.
   - **`app/api/health_routes.py`:** Sistemin ve sunucunun ayakta olduğunu denetleyen `/api/health` sağlık kontrolü GET endpoint'ini (`{"status": "ok"}`) sunar.
-  - **`app/api/user_routes.py`:** Kullanıcı işlemleri için `/api/users/{id}` rotası altında `GET`, `PUT`, `PATCH` ve `DELETE` HTTP metotlarını karşılar. *(Gerçek veritabanı işlemi yapmaksızın test/simülasyon amaçlı örnek JSON yanıtları döner.)*
+  - **`app/api/user_routes.py`:** Kullanıcı işlemleri için `/api/users` rotalarını ve `/api/users/{id}` simülasyon uç noktalarını barındırır.
+- **`app/controllers/` (Controller Katmanı - MVC Controllers):**  
+  Sunum/API katmanı ile servis katmanı arasındaki koordinasyonu sağlayan controller sınıflarını barındırır.
+  - **`app/controllers/user_controller.py`:** Web ve genel sunum katmanına yönelik kullanıcı CRUD işlemlerini yönetir (`create_user`, `get_user`, `get_users`, `update_user`, `delete_user`).
+  - **`app/controllers/api_user_controller.py`:** REST API istemcilerine yönelik kullanıcı CRUD işlemlerini yönetir ve JSON standart yanıtlarını üretir.
 - **`app/core/` (Core / Configuration):**  
   Uygulamanın temel ayarlarını ve veritabanı altyapısını yönetir.
   - **`app/core/config.py`:** Pydantic `BaseSettings` ile `.env` dosyasından ve ortam değişkenlerinden uygulama adı, sürüm, port ve veritabanı URL'si gibi yapılandırmaları okur.
@@ -230,8 +276,10 @@ alumni-tracking-system/
   - Doğrudan çalıştırıldığında Uvicorn ASGI sunucusunu başlatır.
 
 #### 3. Test Paketi (`tests/`)
-- **`tests/test_user_service.py`:**  
-  Herhangi bir harici veritabanına ihtiyaç duymaksızın `User` modelinin Pydantic doğrulamalarını ve `UserService` bellek içi CRUD fonksiyonlarını (`create_user`, `get_user`, `get_users`, `update_user`, `delete_user`) test eden 9 adet birim test içerir (`python -m unittest discover -s tests`).
+- **`tests/test_user_controller.py`:** `UserController` sınıfının web odaklı 5 temel CRUD fonksiyonunu (`create_user`, `get_user`, `get_users`, `update_user`, `delete_user`) ve `UserService` delegasyonunu test eder.
+- **`tests/test_api_user_controller.py`:** `ApiUserController` sınıfının REST API formatındaki 5 temel CRUD fonksiyonunu ve serileştirilmiş çıktılarını test eder.
+- **`tests/test_user_service.py`:** `User` modelinin Pydantic doğrulamalarını ve `UserService` bellek içi CRUD işlemlerini test eder.
+*(Tüm testler harici veritabanı gerektirmeksizin `python -m unittest discover -s tests` ile çalıştırılabilir).*
 
 #### 4. Kök Dizin Yapılandırma Dosyaları
 - **`Dockerfile`:** Uygulamanın Python 3.11 tabanlı konteyner ortamında çalışması için gereken adımları tanımlar.

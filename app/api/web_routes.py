@@ -6,6 +6,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from app.core.config import settings
+from app.controllers.user_controller import UserController
 
 web_router = APIRouter(tags=["Web Pages"])
 
@@ -17,6 +18,7 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 @web_router.get("/", response_class=HTMLResponse, summary="Landing Page")
 async def get_landing_page(request: Request):
     """Renders the modern landing page for the Alumni Tracking System."""
+    user_context = UserController.get_users()
     return templates.TemplateResponse(
         "index.html",
         {
@@ -25,6 +27,8 @@ async def get_landing_page(request: Request):
             "app_title_tr": settings.APP_TITLE_TR,
             "app_description": settings.APP_DESCRIPTION,
             "app_version": settings.APP_VERSION,
+            "users": user_context.get("users", []),
+            "user_count": user_context.get("count", 0),
         },
     )
 
