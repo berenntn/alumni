@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+
+{% block title %}Mezunlar Listesi (Alumni List) | {{ app_title_tr }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Users View Page Styles */
+  .users-hero {
+    background: linear-gradient(135deg, var(--primary) 0%, #16325c 100%);
+    color: var(--text-inverse);
+    padding: 3rem 1.5rem;
+    border-bottom: 3px solid var(--accent);
+  }
+
+  .users-hero .section-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+
+  .users-hero h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+  }
+
+  .users-hero p {
+    color: #cbd5e1;
+    font-size: 1.05rem;
+  }
+
+  .users-stats-pill {
+    background-color: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    padding: 0.6rem 1.25rem;
+    border-radius: var(--radius-full);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--accent-light);
+  }
+
+  /* Alerts */
+  .alert {
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .alert-success {
+    background-color: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+  }
+
+  .alert-error {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+
+  .alert-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Layout Grid */
+  .users-view-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    margin-top: 2rem;
+  }
+
+  /* Form Card */
+  .user-card {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 2rem;
+    transition: var(--transition);
+  }
+
+  .card-header-custom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .card-header-custom h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .form-group label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-main);
+  }
+
+  .form-group label span.req {
+    color: #dc2626;
+  }
+
+  .form-input {
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    background-color: #ffffff;
+    transition: var(--transition);
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+  }
+
+  /* Table Styles */
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  .users-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    text-align: left;
+  }
+
+  .users-table th {
+    background-color: #f8fafc;
+    color: var(--text-muted);
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.9rem 1.25rem;
+    border-bottom: 2px solid var(--border-subtle);
+  }
+
+  .users-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-main);
+    vertical-align: middle;
+  }
+
+  .users-table tr:hover td {
+    background-color: #f8fafc;
+  }
+
+  .user-badge-id {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    background-color: #e2e8f0;
+    color: var(--primary);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+    font-weight: 700;
+  }
+
+  .user-name-cell {
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  .user-dept-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--text-main);
+  }
+
+  .user-year-badge {
+    background-color: var(--accent-subtle);
+    color: #92400e;
+    font-weight: 700;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-full);
+    font-size: 0.85rem;
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 3.5rem 1.5rem;
+    color: var(--text-muted);
+  }
+
+  .empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.6;
+  }
+
+  .empty-state-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state-desc {
+    font-size: 0.95rem;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 768px) {
+    .users-hero h1 {
+      font-size: 1.75rem;
+    }
+    .user-card {
+      padding: 1.25rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header / Hero -->
+<section class="users-hero">
+  <div class="section-container">
+    <div>
+      <div class="badge-university" style="background-color: rgba(251, 191, 36, 0.2); color: #fef3c7; border-color: rgba(251, 191, 36, 0.4); margin-bottom: 0.75rem;">
+        <span class="badge-dot" style="background-color: #fbbf24;"></span>
+        MVC View Katmanı &bull; Kullanıcı Yönetimi
+      </div>
+      <h1 class="section-title">Alumni List &bull; Mezunlar Listesi</h1>
+      <p>Kayıtlı mezunları görüntüleyin ve yeni mezun/kullanıcı kaydı oluşturun.</p>
+    </div>
+    <div>
+      <div class="users-stats-pill">
+        <span style="font-size: 1.2rem;">🎓</span>
+        <span>Toplam Kayıt: <strong>{{ user_count }}</strong></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Main Container -->
+<section class="section" style="padding-top: 2.5rem;">
+  <div class="section-container">
+
+    <!-- Notification Messages -->
+    {% if success_message %}
+    <div class="alert alert-success" role="alert">
+      <span class="alert-icon">✓</span>
+      <div>{{ success_message }}</div>
+    </div>
+    {% endif %}
+
+    {% if error_message %}
+    <div class="alert alert-error" role="alert">
+      <span class="alert-icon">⚠</span>
+      <div>{{ error_message }}</div>
+    </div>
+    {% endif %}
+
+    <div class="users-view-grid">
+
+      <!-- Form Card: Create User (C) -->
+      <div class="user-card">
+        <div class="card-header-custom">
+          <h2>
+            <span>➕</span> Yeni Mezun / Kullanıcı Ekle
+          </h2>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">POST /users</span>
+        </div>
+
+        <form action="/users" method="POST" class="user-create-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="name">Ad Soyad <span class="req">*</span></label>
+              <input 
+                type="text" 
+                id="name" 
+                name="name" 
+                class="form-input" 
+                required 
+                placeholder="Örn: Berkay Tuna"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="email">E-posta Adresi <span class="req">*</span></label>
+              <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                class="form-input" 
+                required 
+                placeholder="Örn: berkay@alumni.istanbul.edu.tr"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="department">Bölüm <span class="req">*</span></label>
+              <input 
+                type="text" 
+                id="department" 
+                name="department" 
+                class="form-input" 
+                required 
+                placeholder="Örn: Bilgisayar Mühendisliği"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="graduation_year">Mezuniyet Yılı <span class="req">*</span></label>
+              <input 
+                type="number" 
+                id="graduation_year" 
+                name="graduation_year" 
+                class="form-input" 
+                required 
+                min="1900" 
+                max="2100" 
+                placeholder="2024"
+              >
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+              <span>Kullanıcıyı Kaydet</span> &rarr;
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Table Card: Users Listing (R) -->
+      <div class="user-card">
+        <div class="card-header-custom">
+          <h2>
+            <span>👥</span> Kayıtlı Mezunlar (Users)
+          </h2>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">GET /users</span>
+        </div>
+
+        {% if users and users|length > 0 %}
+        <div class="table-responsive">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">ID</th>
+                <th>Ad Soyad (Name)</th>
+                <th>E-posta (Email)</th>
+                <th>Bölüm (Department)</th>
+                <th style="text-align: center; width: 140px;">Mezuniyet Yılı</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in users %}
+              <tr>
+                <td>
+                  <span class="user-badge-id">#{{ u.id }}</span>
+                </td>
+                <td class="user-name-cell">{{ u.name }}</td>
+                <td>
+                  <a href="mailto:{{ u.email }}" style="color: var(--info); text-decoration: underline;">
+                    {{ u.email }}
+                  </a>
+                </td>
+                <td>
+                  <span class="user-dept-cell">🏛 {{ u.department }}</span>
+                </td>
+                <td style="text-align: center;">
+                  <span class="user-year-badge">{{ u.graduation_year }}</span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <!-- Empty State Message -->
+        <div class="empty-state">
+          <div class="empty-state-icon">📂</div>
+          <h3 class="empty-state-title">No users found</h3>
+          <p class="empty-state-desc">
+            Henüz sistemde kayıtlı mezun veya kullanıcı bulunmamaktadır. Yukarıdaki formu doldurarak ilk mezunu sisteme kaydedebilirsiniz.
+          </p>
+        </div>
+        {% endif %}
+
+      </div>
+
+    </div>
+
+  </div>
+</section>
+{% endblock %}

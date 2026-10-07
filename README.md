@@ -20,11 +20,12 @@ Bu ilk aşamada; FastAPI tabanlı modern, özgün ve responsive bir açılış s
 4. [MVC Architecture](#-mvc-architecture)
 5. [Kullanıcı Modeli & Bellek İçi CRUD Servisi](#-kullanıcı-modeli--bellek-içi-crud-servisi)
 6. [User Controllers (UserController & ApiUserController)](#-user-controllers-usercontroller--apiusercontroller)
-7. [Project Directory Structure](#-project-directory-structure)
-8. [Uç Noktalar (Endpoints) & Swagger UI](#-uç-noktalar-endpoints--swagger-ui)
-9. [Yerel Kurulum ve Çalıştırma](#-yerel-kurulum-ve-çalıştırma)
-10. [Docker ve Docker Compose ile Çalıştırma](#-docker-ve-docker-compose-ile-çalıştırma)
-11. [Gelecek Aşamalar (Roadmap)](#-gelecek-aşamalar-roadmap)
+7. [View Katmanı & Kullanıcı Yönetim Sayfaları (View Layer)](#-view-katmanı--kullanıcı-yönetim-sayfaları-view-layer)
+8. [Project Directory Structure](#-project-directory-structure)
+9. [Uç Noktalar (Endpoints) & Swagger UI](#-uç-noktalar-endpoints--swagger-ui)
+10. [Yerel Kurulum ve Çalıştırma](#-yerel-kurulum-ve-çalıştırma)
+11. [Docker ve Docker Compose ile Çalıştırma](#-docker-ve-docker-compose-ile-çalıştırma)
+12. [Gelecek Aşamalar (Roadmap)](#-gelecek-aşamalar-roadmap)
 
 ---
 
@@ -212,6 +213,62 @@ REST API uç noktalarında tip güvenliği ve otomatik OpenAPI/Swagger dokümant
 
 ---
 
+## 🖥 View Katmanı & Kullanıcı Yönetim Sayfaları (View Layer)
+
+MVC mimarisinin **View (Görünüm)** katmanı, sunucu tarafında oluşturulan (server-side rendered) Jinja2 HTML şablonları ve statik varlıklar (CSS/JS) ile hayata geçirilmiştir. Bu aşamada kullanıcıların doğrudan tarayıcı üzerinden mezunları görüntüleyebileceği (**Listings / Read**) ve yeni mezun ekleyebileceği (**Creating / Create**) iki temel web rotası View katmanına bağlanmıştır.
+
+### 🔄 Mimari Veri ve Kontrol Akışı (Route ➔ Controller ➔ Service ➔ View)
+Sorumlulukların ayrılması (*Separation of Concerns*) prensibine tam bağlı kalınarak rotalar doğrudan servis veya model ile iletişim kurmaz:
+
+```
+İstemci / Tarayıcı (Browser)
+       │ (1. HTTP İsteği: GET /users veya POST /users)
+       ▼
+1. Web Rotaları Katmanı [app/api/web_routes.py]
+       │ (2. İstek parametrelerini veya form verisini ayrıştırır)
+       ▼
+2. Controller Katmanı [UserController - app/controllers/user_controller.py]
+       │ (3. İşlemi servis katmanına delege eder)
+       ▼
+3. İş Mantığı / Servis Katmanı [UserService - app/services/user_service.py]
+       │ (4. Bellek içi veriyi işler ve sonucu Controller'a döner)
+       ▲ (5. Controller standart sonucu Web Rotasına aktarır)
+       ▼
+4. View / Sunum Katmanı [Jinja2 Templates - app/templates/users/list.html]
+       │ (6. Context verisiyle HTML şablonunu oluşturur)
+       ▼
+İstemciye Yanıt (Render Edilmiş HTML Sayfası)
+```
+
+### 📋 Web View Rotaları
+
+#### 1. `GET /users` ➔ Kullanıcı Listeleme (Listings / Read)
+- **Sorumlu Rota:** `app/api/web_routes.py` -> `get_web_users()`
+- **Sorumlu Controller:** `UserController.get_users()`
+- **Kullanılan Şablon (View):** `app/templates/users/list.html`
+- **İşleyiş:**
+  - `UserController.get_users()` çağrılarak bellekte saklanan tüm kullanıcılar alınır.
+  - Alınan liste `users/list.html` Jinja2 şablonuna context verisi olarak aktarılır.
+  - Sayfada mezunların **Ad Soyad**, **E-posta**, **Bölüm** ve **Mezuniyet Yılı** bilgileri temiz ve responsive bir tabloda listelenir.
+  - Eğer henüz hiç kullanıcı eklenmemişse, kullanıcıyı bilgilendiren anlaşılır bir **"No users found"** boş durum mesajı görüntülenir.
+
+#### 2. `POST /users` ➔ Kullanıcı Oluşturma (Creating / Create)
+- **Sorumlu Rota:** `app/api/web_routes.py` -> `create_web_user()`
+- **Sorumlu Controller:** `UserController.create_user(payload)`
+- **Kullanılan Şablon (View):** `app/templates/users/list.html`
+- **Form Alanları:**
+  - `name`: Kullanıcı / mezun tam adı (zorunlu metin alanı).
+  - `email`: İletişim e-posta adresi (zorunlu e-posta alanı).
+  - `department`: Mezun olunan / kayıtlı bölüm (zorunlu metin alanı).
+  - `graduation_year`: Mezuniyet yılı (zorunlu sayısal alan, 1900-2100).
+- **İşleyiş:**
+  - HTML formundan gönderilen veriler (`application/x-www-form-urlencoded` veya `application/json`) ayrıştırılır.
+  - `graduation_year` değeri tamsayıya dönüştürülerek `UserController.create_user(...)` fonksiyonuna iletilir.
+  - **Başarılı Durumda:** Yeni kullanıcı oluşturulur, güncel kullanıcı listesi ve yeşil bildirim kutusu (`success_message: "Kullanıcı başarıyla oluşturuldu."`) ile liste sayfasına dönülür (HTTP 200).
+  - **Hata Durumunda:** Girdi doğrulaması başarısız olursa kullanıcıya anlaşılır bir hata bildirimi (`error_message`) gösterilerek aynı sayfa render edilir (HTTP 400).
+
+---
+
 ## 📂 Project Directory Structure
 
 Projede yer alan gerçek dizin ve dosya yapısı aşağıda gösterilmektedir:
@@ -254,7 +311,9 @@ alumni-tracking-system/
 │   └── templates/                 # View Katmanı: Jinja2 HTML şablonları
 │       ├── base.html              # Ortak düzen iskeleti (header, navbar, footer)
 │       ├── index.html             # Ana açılış sayfası (Landing Page)
-│       └── about.html             # Proje hakkında sayfası
+│       ├── about.html             # Proje hakkında sayfası
+│       └── users/                 # Kullanıcı yönetimi View şablonları
+│           └── list.html          # Kullanıcı listeleme ve ekleme formu View şablonu
 ├── tests/                         # Birim ve entegrasyon test paketi
 │   ├── __init__.py                # Test paketi belirteci
 │   ├── test_api_user_controller.py # ApiUserController REST API CRUD birim testleri
@@ -274,7 +333,7 @@ alumni-tracking-system/
 #### 1. Ana Uygulama Klasörü (`app/`)
 - **`app/api/` (HTTP Rotaları):**  
   HTTP isteklerini yakalayan ve yönlendiren uç noktaları barındırır.
-  - **`app/api/web_routes.py`:** Jinja2 şablon motorunu kullanarak tarayıcıya HTML sayfalarını (`/` açılış sayfası ve `/about` hakkında sayfası) sunar ve `/users` web rotalarını `UserController` üzerinden yönetir.
+  - **`app/api/web_routes.py`:** Jinja2 şablon motorunu kullanarak tarayıcıya HTML sayfalarını (`/` açılış sayfası, `/about` hakkında sayfası, `/users` mezunlar listesi ve oluşturma sayfası) sunar ve `/users` web rotalarını `UserController` üzerinden yönetir.
   - **`app/api/test_routes.py`:** Katmanlı mimari işleyişini, Pydantic doğrulamasını ve servis katmanı entegrasyonunu doğrulamak için `/hello`, `/hello/{name}` ve `/sum/{a}/{b}` test uç noktalarını barındırır.
   - **`app/api/health_routes.py`:** Sistemin ve sunucunun ayakta olduğunu denetleyen `/api/health` sağlık kontrolü GET endpoint'ini (`{"status": "ok"}`) sunar.
   - **`app/api/user_routes.py`:** Kullanıcı REST API CRUD işlemlerini (`/api/users`, `/api/users/{id}`) `ApiUserController` üzerinden yönetir, Pydantic şemaları ile istek ve yanıtları doğrular.
@@ -298,7 +357,11 @@ alumni-tracking-system/
 - **`app/static/` (View / Statik Dosyalar):**  
   Arayüzün görsel tasarımını sağlayan CSS stillerini (`css/style.css`) ve sayfa içi dinamik özellikleri yöneten JavaScript dosyalarını (`js/main.js`) barındırır.
 - **`app/templates/` (View / Jinja2 Şablonları):**  
-  Sunucu taraflı render edilen HTML şablonlarını (`base.html`, `index.html`, `about.html`) barındırır.
+  Sunucu taraflı render edilen HTML şablonlarını barındırır:
+  - `base.html`: Ortak düzen iskeleti (navigasyon menüsü, footer, genel stiller).
+  - `index.html`: Modern ana açılış sayfası (Landing Page).
+  - `about.html`: Proje ve katmanlı mimari hakkında sayfası.
+  - `users/list.html`: Kullanıcı listesini (`GET /users`) görüntüleyen ve yeni kullanıcı oluşturma formunu (`POST /users`) barındıran View şablonu.
 
 #### 2. Uygulama Giriş Noktası (`app/main.py`)
 - **`app/main.py`:**  
@@ -344,8 +407,8 @@ OpenAPI dokümantasyonunda uç noktalar mantıksal gruplara ayrılmıştır:
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `GET` | `/` | Web Pages | `UserController` | Modern Açılış Sayfası (Landing Page) | `200 OK` (HTML) |
 | `GET` | `/about` | Web Pages | - | Proje & Mimari Hakkında Sayfası | `200 OK` (HTML) |
-| `GET` | `/users` | Web Pages | `UserController` | Web Kullanıcı Listesi | `200 OK` (JSON) |
-| `POST` | `/users` | Web Pages | `UserController` | Web Kullanıcı Ekleme | `200 OK` (JSON) |
+| `GET` | `/users` | Web Pages | `UserController` | Web Mezunlar Listesi Sayfası (Listings / Read) | `200 OK` (HTML) |
+| `POST` | `/users` | Web Pages | `UserController` | Web Formu ile Kullanıcı Oluşturma (Creating / Create) | `200 OK` (HTML) |
 | `GET` | `/users/{id}` | Web Pages | `UserController` | Web Kullanıcı Detayı | `200 OK` (JSON) |
 | `PUT` | `/users/{id}` | Web Pages | `UserController` | Web Kullanıcı Güncelleme | `200 OK` (JSON) |
 | `DELETE` | `/users/{id}` | Web Pages | `UserController` | Web Kullanıcı Silme | `200 OK` (JSON) |

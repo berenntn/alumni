@@ -1,16 +1,18 @@
-"""Unit and integration tests for User, ApiUser, Web, and Health routes via ASGI."""
+"""Unit and integration tests for User, ApiUser, Web View, and Health routes via ASGI."""
 
 import asyncio
 import json
 import unittest
+import urllib.parse
 from typing import Any, Dict, Optional, Tuple
 
+from app.controllers.user_controller import UserController
 from app.main import app
 from app.services.user_service import clear_users
 
 
 class TestRoutes(unittest.TestCase):
-    """Test suite verifying route-to-controller integration and HTTP endpoints."""
+    """Test suite verifying route-to-controller integration, View layer, and HTTP endpoints."""
 
     def setUp(self):
         """Reset the in-memory user store before each test."""
@@ -30,6 +32,31 @@ class TestRoutes(unittest.TestCase):
         """Dispatches an ASGI HTTP request directly to FastAPI app without httpx."""
 
         async def _asgi_call():
+            req_headers = dict(headers or {})
+            body_bytes = b""
+
+            if body is not None:
+                content_type = req_headers.get("content-type", "")
+                if "application/x-www-form-urlencoded" in content_type:
+                    if isinstance(body, dict):
+                        body_bytes = urllib.parse.urlencode(body).encode("utf-8")
+                    elif isinstance(body, str):
+                        body_bytes = body.encode("utf-8")
+                    else:
+                        body_bytes = bytes(body)
+                else:
+                    # Default to application/json if not specified
+                    if "content-type" not in req_headers:
+                        req_headers["content-type"] = "application/json"
+                    if isinstance(body, (dict, list)):
+                        body_bytes = json.dumps(body).encode("utf-8")
+                    elif isinstance(body, str):
+                        body_bytes = body.encode("utf-8")
+                    else:
+                        body_bytes = bytes(body)
+
+            req_headers["content-length"] = str(len(body_bytes))
+
             scope = {
                 "type": "http",
                 "asgi": {"version": "3.0"},
@@ -40,17 +67,9 @@ class TestRoutes(unittest.TestCase):
                 "query_string": b"",
                 "headers": [
                     (k.lower().encode("latin-1"), v.encode("latin-1"))
-                    for k, v in (headers or {}).items()
+                    for k, v in req_headers.items()
                 ],
             }
-
-            body_bytes = b""
-            if body is not None:
-                body_bytes = json.dumps(body).encode("utf-8")
-                scope["headers"].append((b"content-type", b"application/json"))
-            scope["headers"].append(
-                (b"content-length", str(len(body_bytes)).encode("latin-1"))
-            )
 
             request_sent = False
 
@@ -81,8 +100,8 @@ class TestRoutes(unittest.TestCase):
 
             raw_body = b"".join(response_chunks)
             parsed_data: Any = raw_body.decode("utf-8", errors="replace")
-            content_type = response_headers.get("content-type", "")
-            if "application/json" in content_type:
+            resp_content_type = response_headers.get("content-type", "")
+            if "application/json" in resp_content_type:
                 try:
                     parsed_data = json.loads(parsed_data)
                 except Exception:
@@ -125,7 +144,6 @@ class TestRoutes(unittest.TestCase):
 
     def test_api_get_user_by_id(self):
         """GET /api/users/{id} should return 200 for existing user and 404 for missing."""
-        # Create user first
         payload = {
             "name": "Ayşe Yılmaz",
             "email": "ayse@example.com",
@@ -138,13 +156,11 @@ class TestRoutes(unittest.TestCase):
         self.assertEqual(create_status, 201)
         user_id = create_data["data"]["id"]
 
-        # Fetch existing user
         get_status, _, get_data = self._run_request("GET", f"/api/users/{user_id}")
         self.assertEqual(get_status, 200)
         self.assertEqual(get_data["status"], "success")
         self.assertEqual(get_data["data"]["name"], "Ayşe Yılmaz")
 
-        # Fetch non-existent user
         missing_status, _, missing_data = self._run_request(
             "GET", "/api/users/999"
         )
@@ -163,7 +179,6 @@ class TestRoutes(unittest.TestCase):
         _, _, create_data = self._run_request("POST", "/api/users", body=payload)
         user_id = create_data["data"]["id"]
 
-        # Full update
         update_payload = {
             "name": "Mehmet Demir",
             "email": "mehmet@new.com",
@@ -179,7 +194,6 @@ class TestRoutes(unittest.TestCase):
         self.assertEqual(put_data["data"]["department"], "Maliye")
         self.assertEqual(put_data["data"]["graduation_year"], 2021)
 
-        # Update non-existent user
         missing_status, _, missing_data = self._run_request(
             "PUT", "/api/users/999", body=update_payload
         )
@@ -197,16 +211,14 @@ class TestRoutes(unittest.TestCase):
         _, _, create_data = self._run_request("POST", "/api/users", body=payload)
         user_id = create_data["data"]["id"]
 
-        # Partial update: only email
         patch_status, _, patch_data = self._run_request(
             "PATCH", f"/api/users/{user_id}", body={"email": "selin@new.com"}
         )
         self.assertEqual(patch_status, 200)
         self.assertEqual(patch_data["status"], "success")
         self.assertEqual(patch_data["data"]["email"], "selin@new.com")
-        self.assertEqual(patch_data["data"]["name"], "Selin Kaya")  # Preserved
+        self.assertEqual(patch_data["data"]["name"], "Selin Kaya")
 
-        # Patch non-existent user
         missing_status, _, missing_data = self._run_request(
             "PATCH", "/api/users/999", body={"email": "ghost@ghost.com"}
         )
@@ -224,7 +236,6 @@ class TestRoutes(unittest.TestCase):
         _, _, create_data = self._run_request("POST", "/api/users", body=payload)
         user_id = create_data["data"]["id"]
 
-        # Successful deletion
         del_status, _, del_data = self._run_request(
             "DELETE", f"/api/users/{user_id}"
         )
@@ -232,11 +243,9 @@ class TestRoutes(unittest.TestCase):
         self.assertEqual(del_data["status"], "success")
         self.assertIn("deleted successfully", del_data["message"])
 
-        # Subsequent fetch returns 404
         get_status, _, _ = self._run_request("GET", f"/api/users/{user_id}")
         self.assertEqual(get_status, 404)
 
-        # Deleting non-existent user returns 404
         del_missing_status, _, del_missing_data = self._run_request(
             "DELETE", "/api/users/999"
         )
@@ -244,7 +253,7 @@ class TestRoutes(unittest.TestCase):
         self.assertEqual(del_missing_data["status"], "error")
 
     # -------------------------------------------------------------------------
-    # Web Routes (app/api/web_routes.py -> UserController)
+    # Web View Routes (app/api/web_routes.py -> UserController & Jinja2 Templates)
     # -------------------------------------------------------------------------
 
     def test_web_landing_and_about_pages(self):
@@ -257,44 +266,130 @@ class TestRoutes(unittest.TestCase):
         self.assertEqual(status_about, 200)
         self.assertIn("<!DOCTYPE html>", body_about)
 
-    def test_web_user_crud_endpoints(self):
-        """Web user endpoints (/users) should invoke UserController successfully."""
-        # List users (empty)
-        status_get_all, _, data_all = self._run_request("GET", "/users")
-        self.assertEqual(status_get_all, 200)
-        self.assertTrue(data_all["success"])
-        self.assertEqual(data_all["count"], 0)
+    def test_web_get_users_empty_state(self):
+        """GET /users with no users should render HTML with 'No users found' message."""
+        status_code, headers, html = self._run_request("GET", "/users")
+        self.assertEqual(status_code, 200)
+        self.assertIn("text/html", headers.get("content-type", ""))
+        self.assertIn("<!DOCTYPE html>", html)
+        self.assertIn("Alumni List", html)
+        self.assertIn("No users found", html)
+        # Verify form elements exist
+        self.assertIn('name="name"', html)
+        self.assertIn('name="email"', html)
+        self.assertIn('name="department"', html)
+        self.assertIn('name="graduation_year"', html)
 
-        # Create web user
-        create_payload = {
-            "name": "Web Test User",
-            "email": "webuser@example.com",
-            "department": "Felsefe",
-            "graduation_year": 2021,
-        }
-        status_post, _, data_post = self._run_request(
-            "POST", "/users", body=create_payload
+    def test_web_get_users_with_existing_users(self):
+        """GET /users with existing users should render table with user details."""
+        UserController.create_user(
+            name="Ece Bilgin",
+            email="ece@alumni.istanbul.edu.tr",
+            department="Matematik",
+            graduation_year=2021,
         )
-        self.assertEqual(status_post, 200)
-        self.assertTrue(data_post["success"])
-        self.assertEqual(data_post["user"]["name"], "Web Test User")
 
-        # Get web user by ID
-        status_get, _, data_get = self._run_request("GET", "/users/1")
+        status_code, headers, html = self._run_request("GET", "/users")
+        self.assertEqual(status_code, 200)
+        self.assertIn("text/html", headers.get("content-type", ""))
+        self.assertIn("Ece Bilgin", html)
+        self.assertIn("ece@alumni.istanbul.edu.tr", html)
+        self.assertIn("Matematik", html)
+        self.assertIn("2021", html)
+        self.assertNotIn("No users found", html)
+
+    def test_web_post_users_form_submission(self):
+        """POST /users with urlencoded form should create user and return updated list View."""
+        form_payload = {
+            "name": "Caner Öztürk",
+            "email": "caner@alumni.istanbul.edu.tr",
+            "department": "Kimya",
+            "graduation_year": "2023",
+        }
+        status_code, headers, html = self._run_request(
+            "POST",
+            "/users",
+            body=form_payload,
+            headers={"content-type": "application/x-www-form-urlencoded"},
+        )
+        self.assertEqual(status_code, 200)
+        self.assertIn("text/html", headers.get("content-type", ""))
+        self.assertIn("Kullanıcı başarıyla oluşturuldu", html)
+        self.assertIn("Caner Öztürk", html)
+        self.assertIn("caner@alumni.istanbul.edu.tr", html)
+        self.assertIn("Kimya", html)
+        self.assertIn("2023", html)
+
+        # Verify that subsequent GET /users also renders the newly created user
+        get_status, _, get_html = self._run_request("GET", "/users")
+        self.assertEqual(get_status, 200)
+        self.assertIn("Caner Öztürk", get_html)
+        self.assertNotIn("No users found", get_html)
+
+    def test_web_post_users_json_submission(self):
+        """POST /users with JSON payload should also create user and return updated View."""
+        json_payload = {
+            "name": "Seda Varol",
+            "email": "seda@alumni.istanbul.edu.tr",
+            "department": "Biyoloji",
+            "graduation_year": 2022,
+        }
+        status_code, headers, html = self._run_request(
+            "POST",
+            "/users",
+            body=json_payload,
+            headers={"content-type": "application/json"},
+        )
+        self.assertEqual(status_code, 200)
+        self.assertIn("text/html", headers.get("content-type", ""))
+        self.assertIn("Seda Varol", html)
+        self.assertIn("seda@alumni.istanbul.edu.tr", html)
+        self.assertIn("Biyoloji", html)
+
+    def test_web_post_users_validation_error(self):
+        """POST /users with invalid data should return 400 with error message on View."""
+        invalid_payload = {
+            "name": "Time Traveler",
+            "email": "timetraveler@example.com",
+            "department": "Physics",
+            "graduation_year": "1800",  # Out of range (< 1900)
+        }
+        status_code, headers, html = self._run_request(
+            "POST",
+            "/users",
+            body=invalid_payload,
+            headers={"content-type": "application/x-www-form-urlencoded"},
+        )
+        self.assertEqual(status_code, 400)
+        self.assertIn("text/html", headers.get("content-type", ""))
+        self.assertIn("alert-error", html)
+
+    def test_web_user_id_operations(self):
+        """Web routes /users/{id} for GET, PUT, and DELETE should delegate to UserController."""
+        create_res = UserController.create_user(
+            name="Murat Kurt",
+            email="murat@test.com",
+            department="Jeoloji",
+            graduation_year=2020,
+        )
+        user_id = create_res["user"].id
+
+        # GET /users/{id}
+        status_get, _, data_get = self._run_request("GET", f"/users/{user_id}")
         self.assertEqual(status_get, 200)
         self.assertTrue(data_get["success"])
-        self.assertEqual(data_get["user"]["name"], "Web Test User")
+        self.assertEqual(data_get["user"]["name"], "Murat Kurt")
 
-        # Update web user
+        # PUT /users/{id}
         status_put, _, data_put = self._run_request(
-            "PUT", "/users/1", body={"email": "updated_web@example.com"}
+            "PUT", f"/users/{user_id}", body={"department": "Jeofizik"}
         )
         self.assertEqual(status_put, 200)
         self.assertTrue(data_put["success"])
-        self.assertEqual(data_put["user"]["email"], "updated_web@example.com")
+        self.assertEqual(data_put["user"]["department"], "Jeofizik")
 
-        # Delete web user
-        status_del, _, data_del = self._run_request("DELETE", "/users/1")
+        # DELETE /users/{id}
+        status_del, _, data_del = self._run_request("DELETE", f"/users/{user_id}")
         self.assertEqual(status_del, 200)
         self.assertTrue(data_del["success"])
         self.assertIn("deleted successfully", data_del["message"])
@@ -305,22 +400,18 @@ class TestRoutes(unittest.TestCase):
 
     def test_health_and_test_routes_preserved(self):
         """Preserved existing routes (/api/health, /hello, /sum) should continue working."""
-        # Health check
         status_health, _, data_health = self._run_request("GET", "/api/health")
         self.assertEqual(status_health, 200)
         self.assertEqual(data_health, {"status": "ok"})
 
-        # Hello endpoint
         status_hello, _, data_hello = self._run_request("GET", "/hello")
         self.assertEqual(status_hello, 200)
         self.assertEqual(data_hello, {"message": "Hello, World!"})
 
-        # Hello with path parameter
         status_name, _, data_name = self._run_request("GET", "/hello/Antigravity")
         self.assertEqual(status_name, 200)
         self.assertEqual(data_name, {"message": "Hello, Antigravity!"})
 
-        # Sum calculation endpoint
         status_sum, _, data_sum = self._run_request("GET", "/sum/15/27")
         self.assertEqual(status_sum, 200)
         self.assertEqual(data_sum["result"], 42)
