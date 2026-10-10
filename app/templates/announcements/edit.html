@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if announcement %}
+{{ announcement.title }} | Duyuruyu Düzenle
+{% else %}
+Duyuru Bulunamadı | 404
+{% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .edit-hero {
+    background: linear-gradient(135deg, var(--primary) 0%, #16325c 100%);
+    color: var(--text-inverse);
+    padding: 3rem 1.5rem;
+    border-bottom: 3px solid var(--accent);
+  }
+
+  .edit-hero h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+  }
+
+  .edit-hero p {
+    color: #cbd5e1;
+    font-size: 1.05rem;
+  }
+
+  .edit-card {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 2.5rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .form-group label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-main);
+  }
+
+  .form-group label span.req {
+    color: #dc2626;
+  }
+
+  .form-input, .form-textarea {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    background-color: #ffffff;
+    transition: var(--transition);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 140px;
+  }
+
+  .form-input:focus, .form-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .edit-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  /* Alerts */
+  .alert {
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 500;
+  }
+
+  .alert-error {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+
+  @media (max-width: 768px) {
+    .edit-card {
+      padding: 1.5rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="edit-hero">
+  <div class="section-container">
+    <div>
+      <div class="badge-university" style="background-color: rgba(251, 191, 36, 0.2); color: #fef3c7; border-color: rgba(251, 191, 36, 0.4); margin-bottom: 0.75rem;">
+        <span class="badge-dot" style="background-color: #fbbf24;"></span>
+        MVC View Katmanı &bull; Duyuru Güncelleme
+      </div>
+      <h1>
+        {% if announcement %}
+        Duyuruyu Düzenle: #{{ announcement.id }}
+        {% else %}
+        Duyuru Bulunamadı
+        {% endif %}
+      </h1>
+      <p>
+        {% if announcement %}
+        Duyuru başlığını ve içeriğini güncelleyip kaydedin.
+        {% else %}
+        Güncellenmek istenen duyuru kaydı bulunamadı.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top: 2.5rem;">
+  <div class="section-container">
+
+    {% if error_message %}
+    <div class="alert alert-error" role="alert">
+      <span>⚠</span>
+      <div>{{ error_message }}</div>
+    </div>
+    {% endif %}
+
+    {% if announcement %}
+    <div class="edit-card">
+      <form action="/announcements/{{ announcement.id }}/edit" method="POST" class="announcement-edit-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="title">Duyuru Başlığı <span class="req">*</span></label>
+            <input 
+              type="text" 
+              id="title" 
+              name="title" 
+              class="form-input" 
+              required 
+              value="{{ announcement.title }}"
+              placeholder="Örn: 2026 Mezunlar Buluşması Tarihi Belirlendi"
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="created_by">Oluşturan Kullanıcı ID</label>
+            <input 
+              type="number" 
+              id="created_by" 
+              name="created_by" 
+              class="form-input" 
+              min="1" 
+              value="{{ announcement.created_by if announcement.created_by is not none else '' }}"
+              placeholder="Örn: 1"
+            >
+          </div>
+
+          <div class="form-group full-width">
+            <label for="content">Duyuru İçeriği <span class="req">*</span></label>
+            <textarea 
+              id="content" 
+              name="content" 
+              class="form-textarea" 
+              required 
+              placeholder="Duyuru metnini buraya yazınız..."
+            >{{ announcement.content }}</textarea>
+          </div>
+        </div>
+
+        <div class="edit-actions">
+          <a href="/announcements/{{ announcement.id }}" class="btn btn-outline">
+            İptal
+          </a>
+          <button type="submit" class="btn btn-primary">
+            💾 Değişiklikleri Kaydet
+          </button>
+        </div>
+      </form>
+    </div>
+    {% else %}
+    <div class="edit-card" style="text-align: center; padding: 3.5rem 1.5rem;">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+      <h3 style="font-size: 1.4rem; color: var(--primary); margin-bottom: 0.5rem;">Duyuru Bulunamadı</h3>
+      <p style="color: var(--text-muted); margin-bottom: 2rem;">
+        Düzenlemek istediğiniz duyuru kaydı bulunamadı.
+      </p>
+      <a href="/announcements" class="btn btn-primary">
+        &larr; Duyurular Listesine Dön
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

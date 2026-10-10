@@ -31,6 +31,7 @@
         <ul class="nav-links" id="navLinks">
           <li><a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">Ana Sayfa</a></li>
           <li><a href="/users" class="nav-link {% if request.url.path.startswith('/users') %}active{% endif %}">Mezunlar (Users)</a></li>
+          <li><a href="/announcements" class="nav-link {% if request.url.path.startswith('/announcements') %}active{% endif %}">Duyurular (Announcements)</a></li>
           <li><a href="/about" class="nav-link {% if request.url.path == '/about' %}active{% endif %}">Hakkında</a></li>
           <li><a href="/docs" target="_blank" rel="noopener noreferrer" class="nav-link">API Dokümantasyonu (Swagger)</a></li>
           <li><a href="/redoc" target="_blank" rel="noopener noreferrer" class="nav-link">ReDoc</a></li>
@@ -64,6 +65,8 @@
         <h5>Hızlı Bağlantılar</h5>
         <ul>
           <li><a href="/">Ana Sayfa (Home)</a></li>
+          <li><a href="/users">Mezunlar Listesi (/users)</a></li>
+          <li><a href="/announcements">Duyurular (/announcements)</a></li>
           <li><a href="/about">Proje Hakkında (About)</a></li>
           <li><a href="/docs">Swagger UI (/docs)</a></li>
           <li><a href="/redoc">ReDoc (/redoc)</a></li>

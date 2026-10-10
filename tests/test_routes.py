@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, Tuple
 
 from app.controllers.user_controller import UserController
 from app.main import app
+from app.services.announcement_service import clear_announcements
 from app.services.user_service import clear_users
 
 
@@ -15,12 +16,14 @@ class TestRoutes(unittest.TestCase):
     """Test suite verifying route-to-controller integration, View layer CRUD, and HTTP endpoints."""
 
     def setUp(self):
-        """Reset the in-memory user store before each test."""
+        """Reset the in-memory user and announcement stores before each test."""
         clear_users()
+        clear_announcements()
 
     def tearDown(self):
-        """Clean up in-memory user store after each test."""
+        """Clean up in-memory user and announcement stores after each test."""
         clear_users()
+        clear_announcements()
 
     @staticmethod
     def _run_request(

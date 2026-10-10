@@ -4,12 +4,13 @@ import urllib.parse
 from pathlib import Path
 from typing import Any, Dict
 
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Request, Response, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from app.core.config import settings
+from app.controllers.announcement_controller import AnnouncementController
 from app.controllers.user_controller import UserController
 
 web_router = APIRouter(tags=["Web Pages"])
@@ -24,6 +25,17 @@ def _is_json_requested(request: Request) -> bool:
     accept = request.headers.get("accept", "")
     content_type = request.headers.get("content-type", "")
     return "application/json" in accept and "text/html" not in accept
+
+
+def _is_html_requested(request: Request) -> bool:
+    """Checks whether the client requested HTML or submitted standard browser form."""
+    accept = request.headers.get("accept", "")
+    content_type = request.headers.get("content-type", "")
+    return (
+        "text/html" in accept
+        or "application/x-www-form-urlencoded" in content_type
+        or "multipart/form-data" in content_type
+    )
 
 
 async def _extract_form_data(request: Request) -> Dict[str, Any]:
@@ -46,7 +58,9 @@ async def _extract_form_data(request: Request) -> Dict[str, Any]:
     try:
         body_bytes = await request.body()
         if body_bytes:
-            parsed = urllib.parse.parse_qs(body_bytes.decode("utf-8"))
+            parsed = urllib.parse.parse_qs(
+                body_bytes.decode("utf-8"), keep_blank_values=True
+            )
             return {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
     except Exception:
         pass
@@ -473,3 +487,394 @@ async def delete_web_user(request: Request, id: int):
             },
             status_code=status.HTTP_404_NOT_FOUND,
         )
+
+
+# -----------------------------------------------------------------------------
+# Web Announcements CRUD (Coordinating with AnnouncementController & View)
+# -----------------------------------------------------------------------------
+
+
+@web_router.get(
+    "/announcements",
+    response_class=HTMLResponse,
+    summary="Web Announcements Listing Page",
+    description="Renders the HTML View listing all announcements or returns JSON if requested.",
+)
+@web_router.get(
+    "/announcements/",
+    include_in_schema=False,
+)
+async def get_web_announcements(request: Request):
+    """Web route retrieving all announcements via AnnouncementController."""
+    res = AnnouncementController.get_announcements()
+    if _is_html_requested(request):
+        return templates.TemplateResponse(
+            request=request,
+            name="announcements/list.html",
+            context={
+                "app_name": settings.APP_NAME,
+                "app_title_tr": settings.APP_TITLE_TR,
+                "app_description": settings.APP_DESCRIPTION,
+                "app_version": settings.APP_VERSION,
+                "announcements": res.get("announcements", []),
+                "announcement_count": res.get("count", 0),
+            },
+        )
+    return JSONResponse(content=jsonable_encoder(res), status_code=status.HTTP_200_OK)
+
+
+@web_router.post(
+    "/announcements",
+    response_class=HTMLResponse,
+    summary="Web Create Announcement via View Form",
+    description="Processes announcement creation from HTML form or JSON payload via AnnouncementController.",
+)
+@web_router.post(
+    "/announcements/",
+    include_in_schema=False,
+)
+async def create_web_announcement(request: Request):
+    """Web route creating an announcement via AnnouncementController."""
+    raw_data = await _extract_form_data(request)
+    if "created_by" in raw_data and raw_data["created_by"] is not None and raw_data["created_by"] != "":
+        try:
+            raw_data["created_by"] = int(raw_data["created_by"])
+        except (ValueError, TypeError):
+            pass
+    elif "created_by" in raw_data and raw_data["created_by"] == "":
+        raw_data["created_by"] = None
+
+    create_res = AnnouncementController.create_announcement(raw_data)
+
+    if _is_html_requested(request):
+        announcement_context = AnnouncementController.get_announcements()
+        if create_res.get("success"):
+            return templates.TemplateResponse(
+                request=request,
+                name="announcements/list.html",
+                context={
+                    "app_name": settings.APP_NAME,
+                    "app_title_tr": settings.APP_TITLE_TR,
+                    "app_description": settings.APP_DESCRIPTION,
+                    "app_version": settings.APP_VERSION,
+                    "announcements": announcement_context.get("announcements", []),
+                    "announcement_count": announcement_context.get("count", 0),
+                    "success_message": "Duyuru başarıyla yayınlandı.",
+                },
+                status_code=status.HTTP_200_OK,
+            )
+        else:
+            return templates.TemplateResponse(
+                request=request,
+                name="announcements/list.html",
+                context={
+                    "app_name": settings.APP_NAME,
+                    "app_title_tr": settings.APP_TITLE_TR,
+                    "app_description": settings.APP_DESCRIPTION,
+                    "app_version": settings.APP_VERSION,
+                    "announcements": announcement_context.get("announcements", []),
+                    "announcement_count": announcement_context.get("count", 0),
+                    "error_message": create_res.get("message")
+                    or "Duyuru oluşturulurken bir hata oluştu.",
+                },
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+    status_code = status.HTTP_200_OK if create_res.get("success") else status.HTTP_400_BAD_REQUEST
+    return JSONResponse(content=jsonable_encoder(create_res), status_code=status_code)
+
+
+@web_router.get(
+    "/announcements/{id}",
+    response_class=HTMLResponse,
+    summary="Web Announcement Details Page",
+    description="Retrieves a single announcement by ID via AnnouncementController; renders detail HTML view or returns JSON.",
+)
+async def get_web_announcement(request: Request, id: int):
+    """Web route retrieving a single announcement by ID via AnnouncementController."""
+    res = AnnouncementController.get_announcement(id)
+    if _is_html_requested(request):
+        if res.get("success"):
+            return templates.TemplateResponse(
+                request=request,
+                name="announcements/detail.html",
+                context={
+                    "app_name": settings.APP_NAME,
+                    "app_title_tr": settings.APP_TITLE_TR,
+                    "app_description": settings.APP_DESCRIPTION,
+                    "app_version": settings.APP_VERSION,
+                    "announcement": res.get("announcement"),
+                },
+                status_code=status.HTTP_200_OK,
+            )
+        else:
+            return templates.TemplateResponse(
+                request=request,
+                name="announcements/detail.html",
+                context={
+                    "app_name": settings.APP_NAME,
+                    "app_title_tr": settings.APP_TITLE_TR,
+                    "app_description": settings.APP_DESCRIPTION,
+                    "app_version": settings.APP_VERSION,
+                    "announcement": None,
+                    "error_message": res.get("message") or f"Duyuru #{id} bulunamadı.",
+                },
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+    status_code = status.HTTP_200_OK if res.get("success") else status.HTTP_404_NOT_FOUND
+    return JSONResponse(content=jsonable_encoder(res), status_code=status_code)
+
+
+@web_router.get(
+    "/announcements/{id}/edit",
+    response_class=HTMLResponse,
+    summary="Web Edit Announcement Form Page",
+    description="Renders the pre-filled HTML View form to edit an existing announcement via AnnouncementController.",
+)
+async def get_web_announcement_edit_form(request: Request, id: int):
+    """Web route rendering edit announcement form pre-filled via AnnouncementController."""
+    res = AnnouncementController.get_announcement(id)
+    if res.get("success"):
+        return templates.TemplateResponse(
+            request=request,
+            name="announcements/edit.html",
+            context={
+                "app_name": settings.APP_NAME,
+                "app_title_tr": settings.APP_TITLE_TR,
+                "app_description": settings.APP_DESCRIPTION,
+                "app_version": settings.APP_VERSION,
+                "announcement": res.get("announcement"),
+            },
+            status_code=status.HTTP_200_OK,
+        )
+    else:
+        return templates.TemplateResponse(
+            request=request,
+            name="announcements/edit.html",
+            context={
+                "app_name": settings.APP_NAME,
+                "app_title_tr": settings.APP_TITLE_TR,
+                "app_description": settings.APP_DESCRIPTION,
+                "app_version": settings.APP_VERSION,
+                "announcement": None,
+                "error_message": res.get("message") or f"Düzenlenecek duyuru #{id} bulunamadı.",
+            },
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+
+@web_router.post(
+    "/announcements/{id}/edit",
+    response_class=HTMLResponse,
+    summary="Web Update Announcement via Edit Form",
+    description="Processes announcement update from edit View form and returns the updated announcement detail View.",
+)
+@web_router.post(
+    "/announcements/{id}",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def update_web_announcement_form(request: Request, id: int):
+    """Web route handling browser form POST for announcement updates."""
+    raw_data = await _extract_form_data(request)
+    if "created_by" in raw_data and raw_data["created_by"] is not None and raw_data["created_by"] != "":
+        try:
+            raw_data["created_by"] = int(raw_data["created_by"])
+        except (ValueError, TypeError):
+            pass
+    elif "created_by" in raw_data and raw_data["created_by"] == "":
+        raw_data["created_by"] = None
+
+    update_res = AnnouncementController.update_announcement(id, raw_data)
+
+    if _is_html_requested(request):
+        if update_res.get("success"):
+            return templates.TemplateResponse(
+                request=request,
+                name="announcements/detail.html",
+                context={
+                    "app_name": settings.APP_NAME,
+                    "app_title_tr": settings.APP_TITLE_TR,
+                    "app_description": settings.APP_DESCRIPTION,
+                    "app_version": settings.APP_VERSION,
+                    "announcement": update_res.get("announcement"),
+                    "success_message": "Duyuru başarıyla güncellendi.",
+                },
+                status_code=status.HTTP_200_OK,
+            )
+        else:
+            existing_res = AnnouncementController.get_announcement(id)
+            if not existing_res.get("success"):
+                return templates.TemplateResponse(
+                    request=request,
+                    name="announcements/edit.html",
+                    context={
+                        "app_name": settings.APP_NAME,
+                        "app_title_tr": settings.APP_TITLE_TR,
+                        "app_description": settings.APP_DESCRIPTION,
+                        "app_version": settings.APP_VERSION,
+                        "announcement": None,
+                        "error_message": update_res.get("message") or f"Duyuru #{id} bulunamadı.",
+                    },
+                    status_code=status.HTTP_404_NOT_FOUND,
+                )
+            return templates.TemplateResponse(
+                request=request,
+                name="announcements/edit.html",
+                context={
+                    "app_name": settings.APP_NAME,
+                    "app_title_tr": settings.APP_TITLE_TR,
+                    "app_description": settings.APP_DESCRIPTION,
+                    "app_version": settings.APP_VERSION,
+                    "announcement": {**existing_res["announcement"].model_dump(), **raw_data, "id": id},
+                    "error_message": update_res.get("message") or "Duyuru güncellenirken bir hata oluştu.",
+                },
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+    status_code = status.HTTP_200_OK if update_res.get("success") else status.HTTP_400_BAD_REQUEST
+    return JSONResponse(content=jsonable_encoder(update_res), status_code=status_code)
+
+
+@web_router.put(
+    "/announcements/{id}",
+    summary="Web Update Announcement (PUT)",
+    description="Updates an announcement via AnnouncementController; supports JSON payload and form updates.",
+)
+async def update_web_announcement(id: int, request: Request):
+    """Web route updating an announcement via AnnouncementController (PUT)."""
+    raw_data = await _extract_form_data(request)
+    if "created_by" in raw_data and raw_data["created_by"] is not None and raw_data["created_by"] != "":
+        try:
+            raw_data["created_by"] = int(raw_data["created_by"])
+        except (ValueError, TypeError):
+            pass
+    elif "created_by" in raw_data and raw_data["created_by"] == "":
+        raw_data["created_by"] = None
+
+    res = AnnouncementController.update_announcement(id, raw_data)
+
+    if _is_html_requested(request):
+        if res.get("success"):
+            return templates.TemplateResponse(
+                request=request,
+                name="announcements/detail.html",
+                context={
+                    "app_name": settings.APP_NAME,
+                    "app_title_tr": settings.APP_TITLE_TR,
+                    "app_description": settings.APP_DESCRIPTION,
+                    "app_version": settings.APP_VERSION,
+                    "announcement": res.get("announcement"),
+                    "success_message": "Duyuru başarıyla güncellendi.",
+                },
+                status_code=status.HTTP_200_OK,
+            )
+        else:
+            return templates.TemplateResponse(
+                request=request,
+                name="announcements/edit.html",
+                context={
+                    "app_name": settings.APP_NAME,
+                    "app_title_tr": settings.APP_TITLE_TR,
+                    "app_description": settings.APP_DESCRIPTION,
+                    "app_version": settings.APP_VERSION,
+                    "announcement": None,
+                    "error_message": res.get("message") or f"Duyuru #{id} bulunamadı.",
+                },
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+    status_code = status.HTTP_200_OK if res.get("success") else status.HTTP_404_NOT_FOUND
+    return JSONResponse(content=jsonable_encoder(res), status_code=status_code)
+
+
+@web_router.post(
+    "/announcements/{id}/delete",
+    response_class=HTMLResponse,
+    summary="Web Delete Announcement via Form",
+    description="Processes announcement deletion from browser form and returns the updated announcements list View.",
+)
+async def delete_web_announcement_form(request: Request, id: int):
+    """Web route handling browser form POST for announcement deletion."""
+    del_res = AnnouncementController.delete_announcement(id)
+    announcements_context = AnnouncementController.get_announcements()
+
+    if del_res.get("success"):
+        return templates.TemplateResponse(
+            request=request,
+            name="announcements/list.html",
+            context={
+                "app_name": settings.APP_NAME,
+                "app_title_tr": settings.APP_TITLE_TR,
+                "app_description": settings.APP_DESCRIPTION,
+                "app_version": settings.APP_VERSION,
+                "announcements": announcements_context.get("announcements", []),
+                "announcement_count": announcements_context.get("count", 0),
+                "success_message": f"Duyuru #{id} başarıyla silindi.",
+            },
+            status_code=status.HTTP_200_OK,
+        )
+    else:
+        return templates.TemplateResponse(
+            request=request,
+            name="announcements/list.html",
+            context={
+                "app_name": settings.APP_NAME,
+                "app_title_tr": settings.APP_TITLE_TR,
+                "app_description": settings.APP_DESCRIPTION,
+                "app_version": settings.APP_VERSION,
+                "announcements": announcements_context.get("announcements", []),
+                "announcement_count": announcements_context.get("count", 0),
+                "error_message": del_res.get("message") or f"Duyuru #{id} bulunamadı.",
+            },
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+
+@web_router.delete(
+    "/announcements/{id}",
+    summary="Web Delete Announcement (DELETE)",
+    description="Deletes an announcement via AnnouncementController.",
+)
+async def delete_web_announcement(request: Request, id: int):
+    """Web route deleting an announcement via AnnouncementController (DELETE)."""
+    del_res = AnnouncementController.delete_announcement(id)
+
+    if _is_html_requested(request):
+        announcements_context = AnnouncementController.get_announcements()
+        if del_res.get("success"):
+            return templates.TemplateResponse(
+                request=request,
+                name="announcements/list.html",
+                context={
+                    "app_name": settings.APP_NAME,
+                    "app_title_tr": settings.APP_TITLE_TR,
+                    "app_description": settings.APP_DESCRIPTION,
+                    "app_version": settings.APP_VERSION,
+                    "announcements": announcements_context.get("announcements", []),
+                    "announcement_count": announcements_context.get("count", 0),
+                    "success_message": f"Duyuru #{id} başarıyla silindi.",
+                },
+                status_code=status.HTTP_200_OK,
+            )
+        else:
+            return templates.TemplateResponse(
+                request=request,
+                name="announcements/list.html",
+                context={
+                    "app_name": settings.APP_NAME,
+                    "app_title_tr": settings.APP_TITLE_TR,
+                    "app_description": settings.APP_DESCRIPTION,
+                    "app_version": settings.APP_VERSION,
+                    "announcements": announcements_context.get("announcements", []),
+                    "announcement_count": announcements_context.get("count", 0),
+                    "error_message": del_res.get("message") or f"Duyuru #{id} bulunamadı.",
+                },
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+    status_code = status.HTTP_200_OK if del_res.get("success") else status.HTTP_404_NOT_FOUND
+    return JSONResponse(content=jsonable_encoder(del_res), status_code=status_code)
+
+
