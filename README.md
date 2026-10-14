@@ -609,3 +609,28 @@ For a fresh database, use `alembic upgrade head` instead.
 ### Run tests
 
     ./venv/bin/python -m unittest discover -s tests -t . -q
+
+## Factory and Seed
+
+This project includes an Announcement Factory and a database seeder.
+
+### Generate sample announcements
+
+The factory generates sample announcement data without saving it to the database.
+
+    ./venv/bin/python -c "from app.factories.announcement_factory import AnnouncementFactory; print(AnnouncementFactory.create_batch(5))"
+
+### Seed the database
+
+After configuring PostgreSQL and applying Alembic migrations:
+
+    ./venv/bin/python -m app.seeds.announcement_seed
+
+The seed command inserts five sample announcements if they do not already exist.
+Running it again skips announcements with matching titles.
+
+Existing announcements are not deleted.
+
+### Run tests
+
+    ./venv/bin/python -m unittest discover -s tests -t . -q
