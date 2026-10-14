@@ -1,5 +1,6 @@
 """Main FastAPI application entrypoint."""
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -10,9 +11,18 @@ from app.api.health_routes import router as health_router
 from app.api.user_routes import router as user_router
 from app.api.announcement_routes import router as announcement_router
 from app.core.config import settings
+from app.core.database import init_db
 
 # Base directory for resolving static and template directories
 BASE_DIR = Path(__file__).resolve().parent
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager that initializes database tables on startup."""
+    init_db()
+    yield
+
 
 app = FastAPI(
     title=f"{settings.APP_NAME} | {settings.APP_TITLE_TR}",
@@ -21,6 +31,7 @@ app = FastAPI(
         "Bu aşamada katmanlı mimari temeli, HTML/CSS arayüzü ve test uç noktaları sunulmaktadır."
     ),
     version=settings.APP_VERSION,
+    lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_tags=[

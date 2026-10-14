@@ -1,18 +1,25 @@
-"""In-memory Announcement service providing CRUD operations without database connection."""
+"""Announcement service providing database-backed CRUD operations using SQLAlchemy."""
 
-from typing import Dict, List, Optional, Union
-from app.models.announcement import Announcement
+import os
+from typing import List, Optional, Union
+from sqlalchemy import text
+
+from app.core.config import settings
+from app.core.database import get_db_session, init_db
+from app.models.announcement import Announcement, AnnouncementDB
 
 
 class AnnouncementService:
-    """In-memory CRUD service for Announcement entities.
+    """Database-backed CRUD service for Announcement entities.
 
-    Stores announcements temporarily in memory using a simple Python dictionary.
-    No database operations or connection dependencies are utilized.
+    Delegates all persistence operations to PostgreSQL via SQLAlchemy.
+    Does not use in-memory dictionaries for persistence.
     """
 
-    _announcements: Dict[int, Announcement] = {}
-    _next_id: int = 1
+    @classmethod
+    def _ensure_initialized(cls) -> None:
+        """Ensures database tables are initialized before executing operations."""
+        init_db()
 
     @classmethod
     def create_announcement(
@@ -25,61 +32,64 @@ class AnnouncementService:
         id: Optional[int] = None,
         **kwargs,
     ) -> Announcement:
-        """Creates and stores a new Announcement in memory.
+        """Creates and stores a new Announcement in the database.
 
         Can be called with:
         - An Announcement instance: create_announcement(Announcement(...))
         - A dict: create_announcement({"title": "...", "content": "..."})
         - Positional or keyword arguments: create_announcement(title="...", content="...", ...)
         """
-        # Case 1: announcement_or_title is an Announcement instance
+        cls._ensure_initialized()
+
+        target_id: Optional[int] = id
+        raw_title: Optional[str] = None
+        raw_content: Optional[str] = None
+        raw_created_by: Optional[int] = None
+
         if isinstance(announcement_or_title, Announcement):
-            assigned_id = announcement_or_title.id if announcement_or_title.id is not None else cls._next_id
-            if announcement_or_title.id is None:
-                cls._next_id += 1
-            else:
-                cls._next_id = max(cls._next_id, assigned_id + 1)
-            new_announcement = announcement_or_title.model_copy(update={"id": assigned_id})
-            cls._announcements[assigned_id] = new_announcement
-            return new_announcement
+            target_id = announcement_or_title.id if announcement_or_title.id is not None else target_id
+            raw_title = announcement_or_title.title
+            raw_content = announcement_or_title.content
+            raw_created_by = announcement_or_title.created_by
+        elif isinstance(announcement_or_title, dict):
+            target_id = announcement_or_title.get("id") or target_id
+            raw_title = announcement_or_title.get("title")
+            raw_content = announcement_or_title.get("content")
+            raw_created_by = announcement_or_title.get("created_by")
+        else:
+            raw_title = title if title is not None else (str(announcement_or_title) if announcement_or_title is not None else None)
+            raw_content = content
+            raw_created_by = created_by
 
-        # Case 2: announcement_or_title is a dictionary
-        if isinstance(announcement_or_title, dict):
-            data = dict(announcement_or_title)
-            assigned_id = data.get("id") or id or cls._next_id
-            if data.get("id") is None and id is None:
-                cls._next_id += 1
-            else:
-                cls._next_id = max(cls._next_id, assigned_id + 1)
-            data["id"] = assigned_id
-            new_announcement = Announcement(**data)
-            cls._announcements[assigned_id] = new_announcement
-            return new_announcement
-
-        # Case 3: Arguments provided via positional/keyword parameters
-        resolved_title = title if title is not None else announcement_or_title
-        if resolved_title is None:
+        if not raw_title:
             raise ValueError("Announcement title must be provided.")
 
-        assigned_id = id if id is not None else cls._next_id
-        if id is None:
-            cls._next_id += 1
-        else:
-            cls._next_id = max(cls._next_id, assigned_id + 1)
-
-        new_announcement = Announcement(
-            id=assigned_id,
-            title=str(resolved_title),
-            content=content,
-            created_by=created_by,
+        # Validate through Pydantic model to enforce model constraints
+        validated = Announcement(
+            id=target_id,
+            title=raw_title,
+            content=raw_content,
+            created_by=raw_created_by,
             **kwargs,
         )
-        cls._announcements[assigned_id] = new_announcement
-        return new_announcement
+
+        db_item = AnnouncementDB(
+            title=validated.title,
+            content=validated.content,
+            created_by=validated.created_by,
+        )
+        if target_id is not None:
+            db_item.id = target_id
+
+        with get_db_session() as db:
+            db.add(db_item)
+            db.flush()
+            db.refresh(db_item)
+            return Announcement.model_validate(db_item)
 
     @classmethod
     def get_announcement(cls, announcement_id: int) -> Optional[Announcement]:
-        """Retrieves a single announcement by ID from memory.
+        """Retrieves a single announcement by ID from the database.
 
         Args:
             announcement_id: Unique identifier of the announcement.
@@ -87,16 +97,32 @@ class AnnouncementService:
         Returns:
             Announcement if found, None otherwise.
         """
-        return cls._announcements.get(announcement_id)
+        cls._ensure_initialized()
+        with get_db_session() as db:
+            record = (
+                db.query(AnnouncementDB)
+                .filter(AnnouncementDB.id == announcement_id)
+                .first()
+            )
+            if record is None:
+                return None
+            return Announcement.model_validate(record)
 
     @classmethod
     def get_announcements(cls) -> List[Announcement]:
-        """Retrieves all announcements currently stored in memory.
+        """Retrieves all announcements currently stored in the database.
 
         Returns:
             List of all Announcement objects.
         """
-        return list(cls._announcements.values())
+        cls._ensure_initialized()
+        with get_db_session() as db:
+            records = (
+                db.query(AnnouncementDB)
+                .order_by(AnnouncementDB.id.asc())
+                .all()
+            )
+            return [Announcement.model_validate(r) for r in records]
 
     @classmethod
     def update_announcement(
@@ -109,7 +135,7 @@ class AnnouncementService:
         title: Optional[str] = None,
         **kwargs,
     ) -> Optional[Announcement]:
-        """Updates an existing announcement in memory.
+        """Updates an existing announcement in the database.
 
         Args:
             announcement_id: Unique identifier of the announcement to update.
@@ -122,36 +148,58 @@ class AnnouncementService:
         Returns:
             Updated Announcement if found, None otherwise.
         """
-        existing_announcement = cls._announcements.get(announcement_id)
-        if existing_announcement is None:
-            return None
+        cls._ensure_initialized()
+        with get_db_session() as db:
+            record = (
+                db.query(AnnouncementDB)
+                .filter(AnnouncementDB.id == announcement_id)
+                .first()
+            )
+            if record is None:
+                return None
 
-        updates: dict = {}
-        if isinstance(announcement_or_title, Announcement):
-            updates = announcement_or_title.model_dump(exclude_unset=True, exclude={"id"})
-        elif isinstance(announcement_or_title, dict):
-            updates = {k: v for k, v in announcement_or_title.items() if k != "id" and v is not None}
-        else:
-            resolved_title = title if title is not None else announcement_or_title
-            if resolved_title is not None:
-                updates["title"] = resolved_title
-            if content is not None:
-                updates["content"] = content
-            if created_by is not None:
-                updates["created_by"] = created_by
-            for k, v in kwargs.items():
-                if k != "id" and v is not None:
-                    updates[k] = v
+            updates: dict = {}
+            if isinstance(announcement_or_title, Announcement):
+                updates = announcement_or_title.model_dump(
+                    exclude_unset=True, exclude={"id"}
+                )
+            elif isinstance(announcement_or_title, dict):
+                updates = {
+                    k: v
+                    for k, v in announcement_or_title.items()
+                    if k != "id" and v is not None
+                }
+            else:
+                resolved_title = (
+                    title if title is not None else announcement_or_title
+                )
+                if resolved_title is not None:
+                    updates["title"] = resolved_title
+                if content is not None:
+                    updates["content"] = content
+                if created_by is not None:
+                    updates["created_by"] = created_by
+                for k, v in kwargs.items():
+                    if k != "id" and v is not None:
+                        updates[k] = v
 
-        updated_data = existing_announcement.model_dump()
-        updated_data.update(updates)
-        updated_announcement = Announcement(**updated_data)
-        cls._announcements[announcement_id] = updated_announcement
-        return updated_announcement
+            existing_dict = Announcement.model_validate(record).model_dump()
+            existing_dict.update(updates)
+
+            # Validate merged data using Pydantic model
+            validated = Announcement(**existing_dict)
+
+            record.title = validated.title
+            record.content = validated.content
+            record.created_by = validated.created_by
+
+            db.flush()
+            db.refresh(record)
+            return Announcement.model_validate(record)
 
     @classmethod
     def delete_announcement(cls, announcement_id: int) -> bool:
-        """Deletes an announcement from memory by ID.
+        """Deletes an announcement from the database by ID.
 
         Args:
             announcement_id: Unique identifier of the announcement to delete.
@@ -159,16 +207,49 @@ class AnnouncementService:
         Returns:
             True if announcement was found and deleted, False otherwise.
         """
-        if announcement_id in cls._announcements:
-            del cls._announcements[announcement_id]
+        cls._ensure_initialized()
+        with get_db_session() as db:
+            record = (
+                db.query(AnnouncementDB)
+                .filter(AnnouncementDB.id == announcement_id)
+                .first()
+            )
+            if record is None:
+                return False
+            db.delete(record)
             return True
-        return False
 
     @classmethod
     def clear_announcements(cls) -> None:
-        """Clears all announcements in memory and resets ID counter (primarily for testing)."""
-        cls._announcements.clear()
-        cls._next_id = 1
+        """Clears all announcements in isolated test environments.
+
+        Guards against accidental deletion of persistent PostgreSQL production data.
+        """
+        cls._ensure_initialized()
+        from app.core.database import get_engine
+        dialect_name = get_engine().dialect.name
+        if dialect_name != "sqlite":
+            is_test_env = (
+                settings.APP_ENV == "test"
+                or os.environ.get("TESTING", "").lower() in ("true", "1")
+            )
+            if not is_test_env:
+                # Protection: Do not wipe persistent PostgreSQL database
+                return
+
+        with get_db_session() as db:
+
+            db.query(AnnouncementDB).delete()
+            if dialect_name == "sqlite":
+                try:
+                    db.execute(text("DELETE FROM sqlite_sequence WHERE name='announcements'"))
+                except Exception:
+                    pass
+            elif dialect_name == "postgresql":
+                try:
+                    db.execute(text("ALTER SEQUENCE announcements_id_seq RESTART WITH 1"))
+                except Exception:
+                    pass
 
 
 # Standalone function aliases for direct import and functional usage

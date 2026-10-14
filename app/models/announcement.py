@@ -1,7 +1,20 @@
-"""Announcement model representing a notice or announcement entity without database dependencies."""
+"""Announcement models representing notice entities for PostgreSQL and Pydantic validation."""
 
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import Column, Integer, String, Text
+from app.core.database import Base
+
+
+class AnnouncementDB(Base):
+    """SQLAlchemy ORM model representing the announcements table in PostgreSQL."""
+
+    __tablename__ = "announcements"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    title = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    created_by = Column(Integer, nullable=True)
 
 
 class Announcement(BaseModel):
@@ -13,6 +26,8 @@ class Announcement(BaseModel):
         content: Detailed message content of the announcement (required, min length 1).
         created_by: Identifier of the user who created the announcement (optional).
     """
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: Optional[int] = Field(default=None, description="Benzersiz duyuru kimliği")
     title: str = Field(..., description="Duyuru başlığı", min_length=1)

@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -39,6 +40,12 @@ class Settings(BaseSettings):
         """Returns the configured database URL or generates one from Postgres params."""
         if self.DATABASE_URL:
             return self.DATABASE_URL
+        if (
+            self.APP_ENV == "test"
+            or os.environ.get("TESTING", "").lower() in ("true", "1")
+            or "unittest" in sys.modules
+        ):
+            return "sqlite:///:memory:"
         return (
             f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
             f"{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
