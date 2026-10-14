@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 from sqlalchemy import text
 
 from app.core.config import settings
-from app.core.database import get_db_session, init_db
+from app.core.database import get_db_session
 from app.models.announcement import Announcement, AnnouncementDB
 
 
@@ -18,8 +18,8 @@ class AnnouncementService:
 
     @classmethod
     def _ensure_initialized(cls) -> None:
-        """Ensures database tables are initialized before executing operations."""
-        init_db()
+        """Database schema is managed by Alembic migrations."""
+        pass
 
     @classmethod
     def create_announcement(

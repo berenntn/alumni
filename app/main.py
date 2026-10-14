@@ -20,7 +20,6 @@ BASE_DIR = Path(__file__).resolve().parent
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager that initializes database tables on startup."""
-    init_db()
     yield
 
 

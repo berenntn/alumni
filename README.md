@@ -576,3 +576,36 @@ docker compose down
 
 **Geliştirici:** İstanbul Üniversitesi Web Programlama Dersi Öğrencisi  
 **Telif Hakkı:** &copy; 2026 İstanbul Üniversitesi. Tüm hakları saklıdır.
+
+## Database Migrations (Alembic)
+
+This project uses Alembic to manage PostgreSQL database schema changes.
+
+### Apply migrations
+
+After configuring the database connection and starting PostgreSQL:
+
+    docker compose exec web alembic upgrade head
+
+### Check migration status
+
+    docker compose exec web alembic current
+
+### Create a new migration
+
+After updating the SQLAlchemy models:
+
+    docker compose exec web alembic revision --autogenerate -m "describe change"
+
+Review generated migrations before applying them.
+
+### Existing databases
+
+If the announcements table already exists, verify its schema before using
+`alembic stamp head`. This records the migration without recreating the table.
+
+For a fresh database, use `alembic upgrade head` instead.
+
+### Run tests
+
+    ./venv/bin/python -m unittest discover -s tests -t . -q
