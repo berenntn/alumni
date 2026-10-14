@@ -634,3 +634,35 @@ Existing announcements are not deleted.
 ### Run tests
 
     ./venv/bin/python -m unittest discover -s tests -t . -q
+
+## CRUD Interfaces with Database Connection
+
+The Announcement CRUD interfaces are connected to PostgreSQL through SQLAlchemy.
+
+### Architecture
+
+- API routes: app/api/announcement_routes.py
+- Controller: app/controllers/api_announcement_controller.py
+- Service: app/services/announcement_service.py
+- ORM model: app/models/announcement.py
+- Database connection: app/core/database.py
+
+### Supported Announcement Operations
+
+- Create: POST /api/announcements
+- Read all: GET /api/announcements
+- Read one: GET /api/announcements/{id}
+- Update: PUT /api/announcements/{id}
+- Partial update: PATCH /api/announcements/{id}
+- Delete: DELETE /api/announcements/{id}
+
+Announcement data is stored persistently in PostgreSQL.
+
+Note: User CRUD operations currently use an in-memory service and are
+not yet connected to PostgreSQL.
+
+### Verification
+
+The existing test suite passed all 105 tests. The AnnouncementService
+was also verified to read six records from PostgreSQL without modifying
+existing data.
