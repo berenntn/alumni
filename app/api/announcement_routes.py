@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/announcements", tags=["Announcements"])
     "",
     response_model=AnnouncementListApiResponse,
     summary="List All Announcements",
-    description="Retrieves a list of all announcements stored in memory via ApiAnnouncementController.",
+    description="Retrieves a list of all announcements stored in PostgreSQL via ApiAnnouncementController.",
 )
 @router.get(
     "/",
@@ -35,7 +35,7 @@ async def list_announcements():
     response_model=AnnouncementApiResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create Announcement",
-    description="Creates a new announcement in memory via ApiAnnouncementController.",
+    description="Creates a new announcement in PostgreSQL via ApiAnnouncementController.",
 )
 @router.post(
     "/",
@@ -105,7 +105,7 @@ async def patch_announcement(
     "/{id}",
     response_model=AnnouncementDeleteApiResponse,
     summary="Delete Announcement",
-    description="Deletes an existing announcement from in-memory storage via ApiAnnouncementController.",
+    description="Deletes an existing announcement from PostgreSQL database via ApiAnnouncementController.",
 )
 async def delete_announcement(
     response: Response,
