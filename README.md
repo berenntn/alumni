@@ -21,11 +21,12 @@ Bu ilk aşamada; FastAPI tabanlı modern, özgün ve responsive bir açılış s
 5. [Kullanıcı Modeli & Bellek İçi CRUD Servisi](#-kullanıcı-modeli--bellek-içi-crud-servisi)
 6. [User Controllers (UserController & ApiUserController)](#-user-controllers-usercontroller--apiusercontroller)
 7. [View Katmanı & Tam Web Kullanıcı CRUD İşlemleri (View Layer)](#-view-katmanı--tam-web-kullanıcı-crud-işlemleri-view-layer)
-8. [Project Directory Structure](#-project-directory-structure)
-9. [Uç Noktalar (Endpoints) & Swagger UI](#-uç-noktalar-endpoints--swagger-ui)
-10. [Yerel Kurulum ve Çalıştırma](#-yerel-kurulum-ve-çalıştırma)
-11. [Docker ve Docker Compose ile Çalıştırma](#-docker-ve-docker-compose-ile-çalıştırma)
-12. [Gelecek Aşamalar (Roadmap)](#-gelecek-aşamalar-roadmap)
+8. [Veri Tasarımı Dokümantasyonu (add.md)](#-veri-tasarımı-dokümantasyonu-addmd)
+9. [Project Directory Structure](#-project-directory-structure)
+10. [Uç Noktalar (Endpoints) & Swagger UI](#-uç-noktalar-endpoints--swagger-ui)
+11. [Yerel Kurulum ve Çalıştırma](#-yerel-kurulum-ve-çalıştırma)
+12. [Docker ve Docker Compose ile Çalıştırma](#-docker-ve-docker-compose-ile-çalıştırma)
+13. [Gelecek Aşamalar (Roadmap)](#-gelecek-aşamalar-roadmap)
 
 ---
 
@@ -99,7 +100,7 @@ Bununla birlikte, sorumlulukların ayrılması (*Separation of Concerns*) prensi
 ### 🧩 MVC Bileşenlerinin Proje Yapısıyla İlişkisi
 
 - **Model (`app/models/`):**  
-  Veri modellerini ve veritabanı şemalarını temsil eder. SQLAlchemy ORM modelleri bu klasör altında tanımlanır. Verinin yapısını, tabloları, sütunları ve ilişkileri yöneten kalıcılık (persistence) katmanıdır.
+  Veri modellerini ve veritabanı şemalarını temsil eder. SQLAlchemy ORM modelleri (`AnnouncementDB`) ve Pydantic veri modelleri (`User`, `Announcement`) bu klasör altında tanımlanır. Verinin yapısını, tabloları, sütunları, kısıtlamaları ve ilişkileri yöneten kalıcılık (persistence) katmanıdır. Ayrıntılı veri tasarımı, alan tipleri, varlık ilişkileri ve veritabanı kalıcılık stratejisi için kök dizindeki [Veri Tasarımı Dokümantasyonu (add.md)](add.md) belgesini inceleyebilirsiniz.
 - **View (`app/templates/` ve `app/static/`):**  
   Kullanıcıya sunulan arayüz ve sunum katmanıdır. `app/templates/` altındaki Jinja2 HTML şablonları (`index.html`, `about.html`, `base.html`) dinamik web sayfalarını üretir; `app/static/` altındaki CSS ve JavaScript dosyaları ise arayüz stilini ve istemci taraflı etkileşimleri sağlar. REST API uç noktalarında ise istemciye döndürülen standart JSON formatı veri sunum katmanı (View) olarak işlev görür.
 - **Controller (`app/controllers/`) & API Routes (`app/api/`):**  
@@ -314,6 +315,20 @@ Sorumlulukların ayrılması (*Separation of Concerns*) prensibine tam bağlı k
 
 ---
 
+## 🗄 Veri Tasarımı Dokümantasyonu (add.md)
+
+Projenin güncel veri tasarımı, varlık modelleri (entities), alan tipleri, kısıtlamaları, ilişkileri ve kalıcılık stratejileri kök dizindeki [`add.md`](add.md) dosyasında kapsamlı olarak belgelenmiştir.
+
+👉 **Detaylı Rapor ve Şema:** **[Veri Tasarımı Dokümanı (add.md)](add.md)**
+
+### 📌 Öne Çıkan Başlıklar
+- **Veritabanı Kalıcı Modelleri (PostgreSQL):** SQLAlchemy ORM ile tanımlanan `AnnouncementDB` (`announcements` tablosu; `id`, `title`, `content`, `created_by`). Docker Compose ortamında `postgres_data` volume kullanılarak konteynerler silinip baştan başlatılsa bile verilerin korunması ("The Forgetting Test") doğrulanmıştır.
+- **Bellek İçi Modeller (RAM / In-Memory):** Pydantic v2 tabanlı `User` modeli. `UserService` ile bellek içinde (`Dict[int, User]`) saklanır; ilişkisel veritabanı tablosu bulunmamaktadır.
+- **İlişkiler ve Kısıtlar:** Duyurulardaki `created_by` alanı kavramsal olarak kullanıcı kimliğini temsil eder; `users` tablosu henüz veritabanında yer almadığından PostgreSQL seviyesinde `FOREIGN KEY` kısıtlaması bulunmamaktadır.
+- **Varlık-İlişki Diyagramı:** Gerçek tablo ve uygulama varlık yapısını görselleştiren [Mermaid ER Diyagramı](add.md#4-entity-relationship-er-diagram).
+
+---
+
 ## 📂 Project Directory Structure
 
 Projede yer alan gerçek dizin ve dosya yapısı aşağıda gösterilmektedir:
@@ -367,6 +382,7 @@ alumni-tracking-system/
 │   ├── test_routes.py             # Route-to-controller ve HTTP uç nokta entegrasyon testleri
 │   ├── test_user_controller.py    # UserController web CRUD birim testleri
 │   └── test_user_service.py       # User modeli ve bellek içi CRUD servisi birim testleri
+├── add.md                         # Güncel Veri Tasarımı Dokümantasyonu (ERD, modeller, kalıcılık)
 ├── Dockerfile                     # Python 3.11 konteyner ortam tanımı
 ├── docker-compose.yml             # Web ve PostgreSQL servislerinin orkestrasyonu
 ├── requirements.txt               # Proje bağımlılıkları listesi
@@ -428,6 +444,7 @@ alumni-tracking-system/
 *(Tüm testler harici veritabanı gerektirmeksizin `python -m unittest discover -s tests` ile çalıştırılabilir).*
 
 #### 4. Kök Dizin Yapılandırma Dosyaları
+- **`add.md`:** Projenin güncel veri tasarımını, PostgreSQL tablolarını, bellek içi modellerini ve Mermaid ER diyagramını açıklayan [Veri Tasarımı Dokümantasyonu](add.md).
 - **`Dockerfile`:** Uygulamanın Python 3.11 tabanlı konteyner ortamında çalışması için gereken adımları tanımlar.
 - **`docker-compose.yml`:** FastAPI web uygulaması ile PostgreSQL 16 veritabanı konteynerini birlikte başlatan orkestrasyon dosyasıdır.
 - **`requirements.txt`:** FastAPI, Uvicorn, SQLAlchemy, Pydantic, Jinja2 vb. bağımlılıkları listeler.
