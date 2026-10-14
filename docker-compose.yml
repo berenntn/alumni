@@ -1,31 +1,38 @@
-version: '3.8'
-
 services:
   # FastAPI Web Application
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: alumni_web
     restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
-      - APP_NAME=Alumni Tracking System
-      - APP_ENV=development
-      - DEBUG=True
-      - DATABASE_URL=postgresql://alumni_user:alumni_password@db:5432/alumni_db
-      - POSTGRES_SERVER=db
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=alumni_user
-      - POSTGRES_PASSWORD=alumni_password
-      - POSTGRES_DB=alumni_db
+      APP_NAME: "Alumni Tracking System"
+      APP_ENV: "development"
+      DEBUG: "True"
+      PYTHONUNBUFFERED: "1"
+      DATABASE_URL: "postgresql://alumni_user:alumni_password@db:5432/alumni_db"
+      POSTGRES_SERVER: "db"
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: "alumni_user"
+      POSTGRES_PASSWORD: "alumni_password"
+      POSTGRES_DB: "alumni_db"
     volumes:
       - ./app:/app/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
-  # PostgreSQL Database (Prepared for Phase 2 Models)
+  # PostgreSQL Database (Persistent Storage via Named Volume)
   db:
     image: postgres:16-alpine
     container_name: alumni_db
@@ -43,6 +50,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
 volumes:
   postgres_data:
