@@ -1,3 +1,5 @@
+from app.api.application_nested_routes import router as application_nested_router
+from app.api.application_routes import router as application_router
 from app.api.nested_routes import router as nested_router
 """Main FastAPI application entrypoint."""
 
@@ -67,3 +69,7 @@ if __name__ == "__main__":
     )
 
 app.include_router(nested_router)
+
+app.include_router(application_router)
+
+app.include_router(application_nested_router)

@@ -1,3 +1,4 @@
+from app.models.application import ApplicationDB
 """Database models package.
 
 Contains SQLAlchemy ORM models representing the database tables.
@@ -10,4 +11,4 @@ from app.models.user import User
 from app.models.user_db import UserDB
 from app.models.job_posting import JobPostingDB
 
-__all__ = ["Announcement", "AnnouncementDB", "Base", "User", "JobPostingDB", "UserDB"]
+__all__ = ["ApplicationDB", "Announcement", "AnnouncementDB", "Base", "User", "JobPostingDB", "UserDB"]
