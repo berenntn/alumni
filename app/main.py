@@ -1,3 +1,4 @@
+from app.api.nested_routes import router as nested_router
 """Main FastAPI application entrypoint."""
 
 from contextlib import asynccontextmanager
@@ -64,3 +65,5 @@ if __name__ == "__main__":
         port=settings.PORT,
         reload=settings.DEBUG,
     )
+
+app.include_router(nested_router)
