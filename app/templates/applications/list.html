@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}İş Başvuruları | Mezun Takip Sistemi{% endblock %}
+
+{% block content %}
+<section style="max-width: 1000px; margin: 2rem auto; padding: 1rem;">
+  <h1>İş Başvuruları</h1>
+  <p>Mezunların iş ilanlarına yaptığı başvurular.</p>
+
+  {% if applications %}
+    <div style="display: grid; gap: 1rem; margin-top: 2rem;">
+      {% for application in applications %}
+        <article style="background: white; padding: 1.5rem; border: 1px solid #e5e7eb; border-radius: 12px;">
+          <h2>{{ application.job_title }}</h2>
+          <p><strong>Şirket:</strong> {{ application.company_name }}</p>
+          <p><strong>Başvuran:</strong> {{ application.user_name }}</p>
+          <p><strong>Başvuru No:</strong> {{ application.id }}</p>
+          <p><strong>Durum:</strong>
+            {% if application.status == "pending" %}
+              Beklemede
+            {% elif application.status == "accepted" %}
+              Kabul Edildi
+            {% elif application.status == "rejected" %}
+              Reddedildi
+            {% else %}
+              {{ application.status }}
+            {% endif %}
+          </p>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>Henüz iş başvurusu bulunmuyor.</p>
+  {% endif %}
+
+  <p style="margin-top: 2rem;">
+    <a href="/jobs">← İş ilanlarına dön</a>
+  </p>
+</section>
+{% endblock %}

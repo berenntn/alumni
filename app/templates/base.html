@@ -32,6 +32,8 @@
           <li><a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">Ana Sayfa</a></li>
           <li><a href="/users" class="nav-link {% if request.url.path.startswith('/users') %}active{% endif %}">Mezunlar (Users)</a></li>
           <li><a href="/announcements" class="nav-link {% if request.url.path.startswith('/announcements') %}active{% endif %}">Duyurular (Announcements)</a></li>
+          <li><a href="/jobs" class="nav-link {% if request.url.path.startswith('/jobs') %}active{% endif %}">İş İlanları</a></li>
+          <li><a href="/applications" class="nav-link {% if request.url.path.startswith('/applications') %}active{% endif %}">Başvurular</a></li>
           <li><a href="/about" class="nav-link {% if request.url.path == '/about' %}active{% endif %}">Hakkında</a></li>
           <li><a href="/docs" target="_blank" rel="noopener noreferrer" class="nav-link">API Dokümantasyonu (Swagger)</a></li>
           <li><a href="/redoc" target="_blank" rel="noopener noreferrer" class="nav-link">ReDoc</a></li>

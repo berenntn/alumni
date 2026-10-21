@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}İş İlanları | Mezun Takip Sistemi{% endblock %}
+
+{% block content %}
+<section style="max-width: 1000px; margin: 0 auto; padding: 2rem 1rem;">
+
+  <h1>İş İlanları</h1>
+  <p>Mezunlar için güncel iş fırsatlarını keşfedin.</p>
+
+  {% if jobs %}
+    <div style="display: grid; gap: 1.25rem; margin-top: 2rem;">
+      {% for job in jobs %}
+        <article style="background: white; padding: 1.5rem; border: 1px solid #e5e7eb; border-radius: 12px;">
+
+          <h2>{{ job.title }}</h2>
+
+          <p><strong>Şirket:</strong> {{ job.company_name }}</p>
+          <p><strong>Konum:</strong> {{ job.location or "Belirtilmedi" }}</p>
+          <p><strong>Çalışma Türü:</strong> {{ job.employment_type or "Belirtilmedi" }}</p>
+          <p>{{ job.description }}</p>
+
+          <a href="/jobs/{{ job.id }}/apply"
+             style="display: inline-block; margin-top: 1rem; padding: 0.7rem 1.2rem; background: #1d4ed8; color: white; border-radius: 8px; text-decoration: none;">
+            Başvur
+          </a>
+
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>Henüz iş ilanı bulunmuyor.</p>
+  {% endif %}
+
+</section>
+{% endblock %}
