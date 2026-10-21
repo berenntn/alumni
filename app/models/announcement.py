@@ -2,7 +2,8 @@
 
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
@@ -14,7 +15,8 @@ class AnnouncementDB(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
-    created_by = Column(Integer, nullable=True)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    author = relationship("UserDB", back_populates="announcements")
 
 
 class Announcement(BaseModel):

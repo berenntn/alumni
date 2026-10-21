@@ -7,6 +7,7 @@ In subsequent stages, Alumni, Department, Education, and Career models will be r
 from app.core.database import Base
 from app.models.announcement import Announcement, AnnouncementDB
 from app.models.user import User
+from app.models.user_db import UserDB
 from app.models.job_posting import JobPostingDB
 
-__all__ = ["Announcement", "AnnouncementDB", "Base", "User", "JobPostingDB"]
+__all__ = ["Announcement", "AnnouncementDB", "Base", "User", "JobPostingDB", "UserDB"]
