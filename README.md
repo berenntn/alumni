@@ -663,6 +663,62 @@ not yet connected to PostgreSQL.
 
 ### Verification
 
-The existing test suite passed all 105 tests. The AnnouncementService
+The existing test suite passed all 118 tests. The AnnouncementService
 was also verified to read six records from PostgreSQL without modifying
 existing data.
+
+## Job Postings and Applications
+
+The Alumni Tracking System includes web interfaces for job postings
+and job applications, connected to PostgreSQL through SQLAlchemy.
+
+### Job Postings
+
+- View available job postings: GET /jobs
+- Apply for a job: GET /jobs/{job_id}/apply
+- Submit an application: POST /jobs/{job_id}/apply
+- View submitted applications: GET /applications
+
+The job postings page displays the job title, company name,
+description, location, and employment type.
+
+The application form allows a registered database user to apply
+for a job posting using their user ID.
+
+Applications are stored in PostgreSQL with a default status
+of `pending`.
+
+### Application API
+
+- List applications: GET /api/applications
+- Create an application: POST /api/applications
+- Get an application: GET /api/applications/{id}
+- Update application status: PATCH /api/applications/{id}
+- Delete an application: DELETE /api/applications/{id}
+- Get applications by user: GET /api/users/{user_id}/applications
+- Get applications by job: GET /api/job-postings/{job_posting_id}/applications
+
+### Seed Job Postings
+
+Run the following command to insert five sample job postings:
+
+    ./venv/bin/python -m scripts.seed_job_postings
+
+Running the command again skips existing sample job postings
+instead of creating duplicates.
+
+### Web Interface Files
+
+- Web routes: app/api/job_web_routes.py
+- Job postings template: app/templates/job_postings/list.html
+- Application form: app/templates/applications/apply.html
+- Application list: app/templates/applications/list.html
+
+### Tests
+
+Run the automated tests:
+
+    ./venv/bin/python -m unittest discover -s tests -t . -q
+
+All 118 tests passed after implementing the job postings
+and applications web interfaces.
