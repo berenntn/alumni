@@ -9,6 +9,15 @@ from app.schemas.announcement_schemas import (
     AnnouncementListApiResponse,
     AnnouncementDeleteApiResponse,
 )
+from app.schemas.job_posting_schemas import (
+    JobPostingCreateRequest,
+    JobPostingUpdateRequest,
+    JobPostingPatchRequest,
+    JobPostingResponseData,
+    JobPostingApiResponse,
+    JobPostingListApiResponse,
+    JobPostingDeleteApiResponse,
+)
 from app.schemas.test_schemas import HelloResponse, SumResponse
 from app.schemas.user_schemas import (
     UserCreateRequest,
@@ -28,6 +37,13 @@ __all__ = [
     "AnnouncementApiResponse",
     "AnnouncementListApiResponse",
     "AnnouncementDeleteApiResponse",
+    "JobPostingCreateRequest",
+    "JobPostingUpdateRequest",
+    "JobPostingPatchRequest",
+    "JobPostingResponseData",
+    "JobPostingApiResponse",
+    "JobPostingListApiResponse",
+    "JobPostingDeleteApiResponse",
     "HelloResponse",
     "SumResponse",
     "UserCreateRequest",

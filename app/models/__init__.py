@@ -9,6 +9,6 @@ from app.core.database import Base
 from app.models.announcement import Announcement, AnnouncementDB
 from app.models.user import User
 from app.models.user_db import UserDB
-from app.models.job_posting import JobPostingDB
+from app.models.job_posting import JobPosting, JobPostingDB
 
-__all__ = ["ApplicationDB", "Announcement", "AnnouncementDB", "Base", "User", "JobPostingDB", "UserDB"]
+__all__ = ["ApplicationDB", "Announcement", "AnnouncementDB", "Base", "User", "JobPosting", "JobPostingDB", "UserDB"]

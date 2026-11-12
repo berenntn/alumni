@@ -658,67 +658,281 @@ The Announcement CRUD interfaces are connected to PostgreSQL through SQLAlchemy.
 
 Announcement data is stored persistently in PostgreSQL.
 
-Note: User CRUD operations currently use an in-memory service and are
-not yet connected to PostgreSQL.
-
 ### Verification
 
-The existing test suite passed all 118 tests. The AnnouncementService
-was also verified to read six records from PostgreSQL without modifying
-existing data.
+The unified test suite passed all 145 tests.
 
-## Job Postings and Applications
+## Job Postings Validation & REST API
 
-The Alumni Tracking System includes web interfaces for job postings
-and job applications, connected to PostgreSQL through SQLAlchemy.
+Job postings are validated via Pydantic v2 schemas and backed by PostgreSQL through SQLAlchemy ORM.
 
-### Job Postings
+### Validation Rules
 
-- View available job postings: GET /jobs
-- Apply for a job: GET /jobs/{job_id}/apply
-- Submit an application: POST /jobs/{job_id}/apply
-- View submitted applications: GET /applications
+- **`title`**: Required, string, minimum 1 character, maximum 120 characters (`min_length=1, max_length=120`). Exceeding 120 characters triggers HTTP 422 Unprocessable Entity.
+- **`company_name`**: Required, string, minimum 1 character (`min_length=1`). Missing or empty value triggers HTTP 422.
+- **`location` / `city`**: Optional string. If `city` is supplied without `location`, the schema automatically resolves `city` to `location`.
+- **`description`**: Optional string. Defaults to `""` in the database to maintain full compatibility with non-null table constraints.
+- **`employment_type`**: Optional string (e.g. `Full-time`, `Internship`, `Hybrid`, `Remote`).
 
-The job postings page displays the job title, company name,
-description, location, and employment type.
+### Job Postings Endpoints
 
-The application form allows a registered database user to apply
-for a job posting using their user ID.
+- **List Job Postings:** `GET /api/job-postings`
+- **Create Job Posting:** `POST /api/job-postings` (Returns `201 Created` on success, `422` on validation error)
+- **Get Job Posting:** `GET /api/job-postings/{id}` (Returns `404` if not found)
+- **Update Job Posting (PUT):** `PUT /api/job-postings/{id}` (Full update with validation)
+- **Patch Job Posting (PATCH):** `PATCH /api/job-postings/{id}` (Partial update with validation)
+- **Delete Job Posting:** `DELETE /api/job-postings/{id}` (Returns `200 OK` on deletion)
 
-Applications are stored in PostgreSQL with a default status
-of `pending`.
+### Web Interface & Applications
 
-### Application API
+- **View Job Postings:** `GET /jobs`
+- **Apply for a Job:** `GET /jobs/{job_id}/apply`
+- **Submit Application:** `POST /jobs/{job_id}/apply`
+- **View Submitted Applications:** `GET /applications`
 
-- List applications: GET /api/applications
-- Create an application: POST /api/applications
-- Get an application: GET /api/applications/{id}
-- Update application status: PATCH /api/applications/{id}
-- Delete an application: DELETE /api/applications/{id}
-- Get applications by user: GET /api/users/{user_id}/applications
-- Get applications by job: GET /api/job-postings/{job_posting_id}/applications
+### Application REST API
 
-### Seed Job Postings
+- `GET /api/applications`
+- `POST /api/applications`
+- `GET /api/applications/{id}`
+- `PATCH /api/applications/{id}`
+- `DELETE /api/applications/{id}`
+- `GET /api/users/{user_id}/applications`
+- `GET /api/job-postings/{job_posting_id}/applications`
 
-Run the following command to insert five sample job postings:
+---
 
-    ./venv/bin/python -m scripts.seed_job_postings
+## Observability & Error Handling
 
-Running the command again skips existing sample job postings
-instead of creating duplicates.
+### 1. HTTP Request Logging Middleware
 
-### Web Interface Files
+The system includes an ASGI middleware (`RequestLoggingMiddleware` in `app/core/middleware.py`) that logs every HTTP transaction with:
+- **Timestamp:** UTC ISO format (`YYYY-MM-DD HH:MM:SS UTC`)
+- **Method:** `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, etc.
+- **Path:** Request URL path (e.g. `/api/job-postings`)
+- **Response Status:** HTTP status code (e.g. `200`, `201`, `404`, `422`, `500`)
+- **Duration:** Request processing time in milliseconds (e.g. `1.54ms`)
 
-- Web routes: app/api/job_web_routes.py
-- Job postings template: app/templates/job_postings/list.html
-- Application form: app/templates/applications/apply.html
-- Application list: app/templates/applications/list.html
+Log output is formatted and streamed via standard Python logging.
 
-### Tests
+### 2. Safe Global 5xx Exception Handling
 
-Run the automated tests:
+Unexpected server-side errors are caught by `global_exception_handler` (`app/core/exceptions.py`):
+- **Server-side Security:** Full error stack traces and internal diagnostics are written to `logs/error.log` via Python logging (`exc_info=True`).
+- **Client-side Shielding:** Users never receive sensitive tracebacks, database credentials, or internal file paths.
+- **Response Format:**
+  - **API Requests (`/api/*` or JSON clients):** Clean JSON with status code `500`:
+    ```json
+    {
+      "status": "error",
+      "message": "Internal Server Error",
+      "detail": "An unexpected error occurred. Please contact system administrator if this persists."
+    }
+    ```
+  - **Browser Requests:** Branded HTML `500.html` page with status code `500`.
 
-    ./venv/bin/python -m unittest discover -s tests -t . -q
+### 3. Custom 404 Handling
 
-All 118 tests passed after implementing the job postings
-and applications web interfaces.
+The application distinguishes between browser and API requests on 404 Not Found:
+- **Browser Routes:** Renders a styled, responsive `404.html` page (in Istanbul University navy `#0f2744` and gold `#d97706` theme) with navigation links to Home, Job Postings, and Announcements.
+- **API Routes (`/api/*` or JSON clients):** Returns a structured JSON 404 envelope:
+  ```json
+  {
+    "status": "error",
+    "message": "Resource not found",
+    "detail": "Not Found"
+  }
+  ```
+
+### 4. Error Logging & Git Configuration
+
+- Error logs are written to `logs/error.log` using Python `logging.FileHandler`.
+- `.gitignore` includes `logs/` and `*.log` to guarantee that runtime logs are never committed to the repository.
+
+---
+
+## Automated Test Results
+
+Run all test suites including job posting validation, middleware logging, 404 and 5xx behavior:
+
+```bash
+./venv/bin/python -m unittest discover -s tests -t . -q
+```
+
+**Result:**
+```
+Ran 145 tests in 0.324s
+
+OK
+```
+All 145 tests passed successfully with 0 failures and 0 regressions.
+
+---
+
+## Postman-Ready Negative Test Examples
+
+Use the following negative test scenarios in Postman or cURL to verify input validation, 404 routing, and safe 5xx handling:
+
+### 1. Job Posting Validation: Title Exceeds 120 Characters (HTTP 422)
+
+**Endpoint:** `POST http://localhost:8000/api/job-postings`  
+**Headers:** `Content-Type: application/json`
+
+**Request Body:**
+```json
+{
+  "title": "Senior Staff Principal Solutions Architect Leading Enterprise Distributed Systems Cloud Infrastructure Automation And Security Engineering Operations",
+  "company_name": "Tech Corp"
+}
+```
+
+**Expected Response (HTTP 422 Unprocessable Entity):**
+```json
+{
+  "detail": [
+    {
+      "type": "string_too_long",
+      "loc": ["body", "title"],
+      "msg": "String should have at most 120 characters",
+      "input": "Senior Staff Principal Solutions Architect Leading Enterprise Distributed Systems Cloud Infrastructure Automation And Security Engineering Operations",
+      "ctx": {"max_length": 120}
+    }
+  ]
+}
+```
+
+**cURL:**
+```bash
+curl -X POST http://localhost:8000/api/job-postings \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Senior Staff Principal Solutions Architect Leading Enterprise Distributed Systems Cloud Infrastructure Automation And Security Engineering Operations", "company_name": "Tech Corp"}'
+```
+
+---
+
+### 2. Job Posting Validation: Missing Title (HTTP 422)
+
+**Endpoint:** `POST http://localhost:8000/api/job-postings`  
+**Headers:** `Content-Type: application/json`
+
+**Request Body:**
+```json
+{
+  "company_name": "TechCorp"
+}
+```
+
+**Expected Response (HTTP 422 Unprocessable Entity):**
+```json
+{
+  "detail": [
+    {
+      "type": "missing",
+      "loc": ["body", "title"],
+      "msg": "Field required"
+    }
+  ]
+}
+```
+
+**cURL:**
+```bash
+curl -X POST http://localhost:8000/api/job-postings \
+  -H "Content-Type: application/json" \
+  -d '{"company_name": "TechCorp"}'
+```
+
+---
+
+### 3. Job Posting Validation: Missing Company Name (HTTP 422)
+
+**Endpoint:** `POST http://localhost:8000/api/job-postings`  
+**Headers:** `Content-Type: application/json`
+
+**Request Body:**
+```json
+{
+  "title": "Backend Developer"
+}
+```
+
+**Expected Response (HTTP 422 Unprocessable Entity):**
+```json
+{
+  "detail": [
+    {
+      "type": "missing",
+      "loc": ["body", "company_name"],
+      "msg": "Field required"
+    }
+  ]
+}
+```
+
+**cURL:**
+```bash
+curl -X POST http://localhost:8000/api/job-postings \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Backend Developer"}'
+```
+
+---
+
+### 4. Custom 404 for API Route (HTTP 404 JSON)
+
+**Endpoint:** `GET http://localhost:8000/api/nonexistent-endpoint`  
+**Headers:** `Accept: application/json`
+
+**Expected Response (HTTP 404 Not Found):**
+```json
+{
+  "status": "error",
+  "message": "Resource not found",
+  "detail": "Not Found"
+}
+```
+
+**cURL:**
+```bash
+curl -X GET http://localhost:8000/api/nonexistent-endpoint \
+  -H "Accept: application/json"
+```
+
+---
+
+### 5. Custom 404 for Browser Route (HTTP 404 HTML)
+
+**Endpoint:** `GET http://localhost:8000/sayfa-bulunamadi-ornek`  
+**Headers:** `Accept: text/html`
+
+**Expected Response (HTTP 404 Not Found):**
+HTML page rendering the custom Istanbul University 404 template (`404.html`) with header, brand logo, navigation buttons, and status code 404.
+
+**cURL:**
+```bash
+curl -i -X GET http://localhost:8000/sayfa-bulunamadi-ornek \
+  -H "Accept: text/html"
+```
+
+---
+
+### 6. Safe 5xx Server Error Simulation (HTTP 500 JSON)
+
+**Endpoint:** `GET http://localhost:8000/api/test/error-500`  
+**Headers:** `Accept: application/json`
+
+**Expected Response (HTTP 500 Internal Server Error):**
+```json
+{
+  "status": "error",
+  "message": "Internal Server Error",
+  "detail": "An unexpected error occurred. Please contact system administrator if this persists."
+}
+```
+*Note: The actual stack trace is recorded safely on the server in `logs/error.log` without exposing sensitive details to the client.*
+
+**cURL:**
+```bash
+curl -X GET http://localhost:8000/api/test/error-500 \
+  -H "Accept: application/json"
+```

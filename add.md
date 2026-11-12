@@ -2,7 +2,7 @@
 
 ## Alumni Management & Tracking System (İstanbul Üniversitesi Mezun Takip Sistemi)
 
-> **Document Version:** 1.0.0  
+> **Document Version:** 2.0.0  
 > **Target System:** FastAPI, SQLAlchemy 2.0+, PostgreSQL 16, Pydantic v2  
 > **Status:** Current Production & Development Implementation  
 > **Reference File:** `add.md` (Project Root)
@@ -13,18 +13,25 @@
 
 The **Alumni Management & Tracking System** utilizes a modern **Layered MVC Architecture** (Routes ➔ Controllers ➔ Services ➔ Persistence / View).
 
-As part of the system's progressive architectural roadmap, the data persistence layer is currently in a **hybrid transitional state**:
+All core domains are fully integrated with PostgreSQL 16 using SQLAlchemy ORM and tracked by Alembic migrations:
 
-1. **Database-Backed Persistent Entities (PostgreSQL via SQLAlchemy):**  
-   The **Announcements** module is fully integrated with PostgreSQL 16 using SQLAlchemy ORM. All announcements are persisted in the database and survive container restarts, system reboots, and `docker compose down` cycles (tested and verified via the "Forgetting Test").
-2. **In-Memory Application Entities (Pydantic v2 in RAM):**  
-   The **User (Alumni)** module currently operates using an in-memory data store (`UserService._users: Dict[int, User]`). There is **no database table** or SQLAlchemy ORM model for users in PostgreSQL at this stage.
-3. **Data Transfer Objects & Validation Schemas (Pydantic v2):**  
-   Strict request and response schemas govern API endpoints under `app/schemas/`, ensuring serialization, input validation, and OpenAPI documentation integrity.
-
-> [!IMPORTANT]
-> **No Imaginary Database Tables:**  
-> In accordance with the project's actual implementation, only the `announcements` table exists in PostgreSQL. There is **no `users` table** in the relational database, and consequently, there is **no database-level foreign key constraint** between announcements and users.
+1. **User (Alumni) Domain:**  
+   Persisted in PostgreSQL table `users` (`UserDB`). Each alumnus has a unique email, department, graduation year, and relationships with announcements and job applications.
+2. **Announcements Domain:**  
+   Persisted in PostgreSQL table `announcements` (`AnnouncementDB`). Includes a relational foreign key to `users.id` (`ON DELETE SET NULL`).
+3. **Job Postings Domain:**  
+   Persisted in PostgreSQL table `job_postings` (`JobPostingDB`). Governed by strict Pydantic v2 validation:
+   - `title`: Required, maximum 120 characters (`min_length=1, max_length=120`).
+   - `company_name`: Required (`min_length=1`).
+   - `location` / `city`: Optional (automatically resolves `city` alias to `location`).
+   - `description`: Optional (defaults to `""` in ORM to ensure constraint safety).
+   - `employment_type`: Optional.
+4. **Job Applications Domain:**  
+   Persisted in PostgreSQL table `applications` (`ApplicationDB`). Relational link joining `users.id` and `job_postings.id` with application statuses (`pending`, `accepted`, `rejected`).
+5. **Observability, Middleware & Safe Error Handling:**  
+   - **HTTP Request Logging Middleware:** Logs UTC timestamp, method, path, response status, and duration in milliseconds.
+   - **Custom 404 Handling:** Automatically routes web browser requests to a branded HTML 404 page, and API requests (`/api/*` or JSON clients) to a structured JSON 404 response.
+   - **Safe Global 5xx Exception Handling:** Catches unexpected server errors, writes full stack trace details to `logs/error.log`, and returns sanitized 500 responses without leaking internal stack frames or credentials.
 
 ---
 
@@ -44,7 +51,7 @@ As part of the system's progressive architectural roadmap, the data persistence 
 - **Session Management:**
   - `get_db_session()`: Context manager providing transactional scopes (`commit()`, automatic `rollback()` on exceptions, and guaranteed `close()`).
   - `get_db()`: Generator dependency for FastAPI route lifecycles.
-- **Table Initialization:** `init_db()` invokes `Base.metadata.create_all(bind=eng)` upon startup or first service invocation.
+- **Table Initialization:** `init_db()` invokes `Base.metadata.create_all(bind=eng)` upon startup.
 
 ### 2.3. Automated Testing Fallback Strategy
 - When running in test mode (`APP_ENV=test`, `TESTING=true`, or `unittest` detected in `sys.modules`), `settings.get_database_url()` automatically resolves to an isolated in-memory SQLite database (`sqlite:///:memory:` with `StaticPool`).
@@ -52,170 +59,124 @@ As part of the system's progressive architectural roadmap, the data persistence 
 
 ---
 
-## 3. Entity Specifications (Actual Current State)
+## 3. Entity Specifications
 
-### 3.1. Database-Backed Model: `AnnouncementDB` (`announcements` Table)
+### 3.1. `UserDB` (`users` Table)
+Defined in [`app/models/user_db.py`](app/models/user_db.py).
 
-Defined in [`app/models/announcement.py`](app/models/announcement.py) and mapped via SQLAlchemy ORM.
+| Column Name | SQL Data Type | Primary Key | Nullable | Indexed | Constraints & Behaviors | Description |
+| :--- | :--- | :---: | :---: | :---: | :--- | :--- |
+| `id` | `INTEGER` | **YES** | NO | **YES** | `autoincrement=True` | Unique alumnus identifier |
+| `name` | `VARCHAR(255)` | NO | NO | NO | Required, min length 1 | Full name of the alumnus |
+| `email` | `VARCHAR(255)` | NO | NO | **YES** | `unique=True` | Unique email address |
+| `department` | `VARCHAR(255)` | NO | NO | NO | Required | Graduated department |
+| `graduation_year` | `INTEGER` | NO | NO | NO | Required, 1900-2100 | Year of graduation |
+| `created_at` | `TIMESTAMP` | NO | NO | NO | `default=datetime.utcnow` | Creation timestamp |
 
-- **Class Name:** `AnnouncementDB`
-- **Base:** `app.core.database.Base`
-- **Table Name:** `announcements`
-- **Persistence Strategy:** Persistent PostgreSQL relational table with autoincrement sequence (`announcements_id_seq`).
-
-#### Field Details & Data Types
-
-| Column Name | SQL Data Type | Python / SQLAlchemy Type | Primary Key | Nullable | Indexed | Constraints & Behaviors | Description |
-| :--- | :--- | :--- | :---: | :---: | :---: | :--- | :--- |
-| `id` | `INTEGER` | `Integer` | **YES** | NO | **YES** | `autoincrement=True` | Unique announcement identifier (Surrogate Key). |
-| `title` | `VARCHAR(255)` | `String(255)` | NO | NO | NO | Max length 255 chars, required. | Title / subject of the announcement. |
-| `content` | `TEXT` | `Text` | NO | NO | NO | Variable length, required. | Full body text of the announcement. |
-| `created_by` | `INTEGER` | `Integer` | NO | **YES** | NO | Optional (`nullable=True`). | Conceptual author user ID (**No DB foreign key constraint**). |
-
-#### Constraints & Relationship Notes
-- **Primary Key:** `id` is the primary key and is indexed for rapid lookups (`filter(AnnouncementDB.id == announcement_id)`).
-- **Foreign Keys:** **NONE**.  
-  While `created_by` semantically holds the integer ID of the creating user, **no foreign key constraint exists** in PostgreSQL. This is intentional because user entities currently reside in memory and do not have a relational table in the database.
-- **Cascade Rules:** N/A (no relational foreign key defined).
-
----
-
-### 3.2. In-Memory / Pydantic Model: `User`
-
-Defined in [`app/models/user.py`](app/models/user.py).
-
-- **Class Name:** `User`
-- **Base:** `pydantic.BaseModel`
-- **Table Name:** *None* (No database table exists).
-- **Persistence Strategy:** Purely in-memory storage within `UserService._users: Dict[int, User]`.
-- **Lifecycle:** Volatile. State is stored in Python heap memory and is reset when the application process terminates or restarts.
-
-#### Field Details & Data Types
-
-| Field Name | Python Data Type | Pydantic Field Constraints | Default Value | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `id` | `Optional[int]` | Optional integer identifier. | `None` | Unique user ID, assigned sequentially by `UserService._next_id`. |
-| `name` | `str` | Minimum length 1 character (`min_length=1`). | *Required* | Full name of the alumni or user. |
-| `email` | `str` | Standard string representation of email. | *Required* | Email address of the user. |
-| `department` | `str` | Non-empty string. | *Required* | Department graduated from or enrolled in. |
-| `graduation_year` | `int` | Integer bounded by `ge=1900, le=2100`. | *Required* | Valid graduation year. |
-
----
-
-### 3.3. Domain & Validation Model: `Announcement` (Pydantic)
-
+### 3.2. `AnnouncementDB` (`announcements` Table)
 Defined in [`app/models/announcement.py`](app/models/announcement.py).
 
-- **Class Name:** `Announcement`
-- **Base:** `pydantic.BaseModel`
-- **Configuration:** `model_config = ConfigDict(from_attributes=True)` enables seamless conversion between SQLAlchemy ORM records and Pydantic models.
-- **Role:** Serves as the validation contract and data transfer boundary between the database layer and web/API controllers.
+| Column Name | SQL Data Type | Primary Key | Nullable | Indexed | Constraints & Behaviors | Description |
+| :--- | :--- | :---: | :---: | :---: | :--- | :--- |
+| `id` | `INTEGER` | **YES** | NO | **YES** | `autoincrement=True` | Unique announcement identifier |
+| `title` | `VARCHAR(255)` | NO | NO | NO | Required | Announcement title / subject |
+| `content` | `TEXT` | NO | NO | NO | Required | Body text |
+| `created_by` | `INTEGER` | NO | **YES** | NO | FK `users.id` (`ON DELETE SET NULL`) | Author alumnus ID |
 
-#### Field Details & Data Types
+### 3.3. `JobPostingDB` (`job_postings` Table)
+Defined in [`app/models/job_posting.py`](app/models/job_posting.py).
 
-| Field Name | Python Data Type | Pydantic Field Constraints | Default Value | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `id` | `Optional[int]` | Optional integer identifier. | `None` | Unique announcement ID. |
-| `title` | `str` | `min_length=1` | *Required* | Announcement title / subject. |
-| `content` | `str` | `min_length=1` | *Required* | Announcement body content. |
-| `created_by` | `Optional[int]` | Optional integer ID. | `None` | User ID of the creator. |
+| Column Name | SQL Data Type | Primary Key | Nullable | Constraints & Behaviors | Description |
+| :--- | :--- | :---: | :---: | :--- | :--- |
+| `id` | `INTEGER` | **YES** | NO | `autoincrement=True` | Unique job posting identifier |
+| `title` | `VARCHAR(255)` | NO | NO | Required; Pydantic max 120 chars | Job title / position |
+| `company_name` | `VARCHAR(255)` | NO | NO | Required; min 1 char | Company / Organization name |
+| `description` | `TEXT` | NO | **YES** | Optional (ORM default `""`) | Responsibilities & details |
+| `location` | `VARCHAR(255)` | NO | **YES** | Optional | City / Location (supports `city` alias) |
+| `employment_type` | `VARCHAR(50)` | NO | **YES** | Optional | Full-time, Hybrid, Internship, etc. |
+| `created_at` | `TIMESTAMP` | NO | NO | `default=datetime.utcnow` | Posting timestamp |
+
+### 3.4. `ApplicationDB` (`applications` Table)
+Defined in [`app/models/application.py`](app/models/application.py).
+
+| Column Name | SQL Data Type | Primary Key | Nullable | Constraints & Behaviors | Description |
+| :--- | :--- | :---: | :---: | :--- | :--- |
+| `id` | `INTEGER` | **YES** | NO | `autoincrement=True` | Unique application identifier |
+| `user_id` | `INTEGER` | NO | NO | FK `users.id` | Alumnus applicant ID |
+| `job_posting_id` | `INTEGER` | NO | NO | FK `job_postings.id` | Target job posting ID |
+| `status` | `VARCHAR(20)` | NO | NO | `default="pending"` | Status: pending, accepted, rejected |
+| `created_at` | `TIMESTAMP` | NO | NO | `default=datetime.utcnow` | Application timestamp |
 
 ---
 
 ## 4. Entity-Relationship (ER) Diagram
 
-The following Mermaid ER diagram illustrates the **actual current data design**.
-
-It explicitly reflects that:
-1. `announcements` is a persistent physical table in PostgreSQL.
-2. `User` is an in-memory application model.
-3. The relationship between `User` and `announcements` is **conceptual only** (`created_by` stores user IDs, but no relational database foreign key constraint is enforced).
-
 ```mermaid
 erDiagram
-    %% ==========================================================
-    %% PHYSICAL DATABASE TABLE (PostgreSQL 16)
-    %% ==========================================================
+    USERS ||--o{ ANNOUNCEMENTS : "publishes (created_by)"
+    USERS ||--o{ APPLICATIONS : "submits (user_id)"
+    JOB_POSTINGS ||--o{ APPLICATIONS : "receives (job_posting_id)"
+
+    USERS {
+        INTEGER id PK
+        VARCHAR name "NOT NULL"
+        VARCHAR email "NOT NULL, UNIQUE"
+        VARCHAR department "NOT NULL"
+        INTEGER graduation_year "NOT NULL"
+        TIMESTAMP created_at "NOT NULL"
+    }
+
     ANNOUNCEMENTS {
-        INTEGER id PK "autoincrement, index"
-        VARCHAR_255 title "NOT NULL"
+        INTEGER id PK
+        VARCHAR title "NOT NULL"
         TEXT content "NOT NULL"
-        INTEGER created_by "NULLABLE (Conceptual User ID, No DB FK)"
+        INTEGER created_by FK "NULLABLE (users.id, ON DELETE SET NULL)"
     }
 
-    %% ==========================================================
-    %% APPLICATION IN-MEMORY ENTITY (Python RAM / Dict[int, User])
-    %% ==========================================================
-    USER_IN_MEMORY {
-        INTEGER id PK "Optional / Managed in RAM by UserService"
-        VARCHAR name "Required, min_length=1"
-        VARCHAR email "Required"
-        VARCHAR department "Required"
-        INTEGER graduation_year "Required, 1900-2100"
+    JOB_POSTINGS {
+        INTEGER id PK
+        VARCHAR title "NOT NULL, max 120 chars"
+        VARCHAR company_name "NOT NULL"
+        TEXT description "NULLABLE, default empty"
+        VARCHAR location "NULLABLE"
+        VARCHAR employment_type "NULLABLE"
+        TIMESTAMP created_at "NOT NULL"
     }
 
-    %% ==========================================================
-    %% CONCEPTUAL RELATIONSHIP
-    %% (Enforced in application layer, NOT by PostgreSQL FK)
-    %% ==========================================================
-    USER_IN_MEMORY ||--o{ ANNOUNCEMENTS : "conceptually creates (no DB FK constraint)"
+    APPLICATIONS {
+        INTEGER id PK
+        INTEGER user_id FK "NOT NULL (users.id)"
+        INTEGER job_posting_id FK "NOT NULL (job_postings.id)"
+        VARCHAR status "NOT NULL, default pending"
+        TIMESTAMP created_at "NOT NULL"
+    }
 ```
 
 ---
 
-## 5. Persistence Strategy Comparison Matrix
+## 5. Middleware, Error Handling & Logging Architecture
 
-| Aspect | `AnnouncementDB` (`announcements`) | `User` (Alumni) | API Schemas (`app/schemas/`) |
-| :--- | :--- | :--- | :--- |
-| **Model Type** | SQLAlchemy ORM Model (`Base`) | Pydantic v2 `BaseModel` | Pydantic v2 `BaseModel` |
-| **Storage Medium** | PostgreSQL 16 Relational DB | In-Memory (`Dict[int, User]`) | Ephemeral (HTTP request/response) |
-| **Physical Table Name** | `announcements` | *None (No DB Table)* | *None (No DB Table)* |
-| **Survives `docker compose down`?** | **YES** (Stored in `postgres_data`) | **NO** (Cleared on restart) | N/A |
-| **Survives Process Restart?** | **YES** (Persistent in PostgreSQL) | **NO** (RAM only) | N/A |
-| **Primary Key / ID Generation** | PostgreSQL `SERIAL` / Sequence | `UserService._next_id` incrementer | Optional ID fields in payloads |
-| **Foreign Key Constraints** | None (DB-level FK not defined) | None | None |
-| **Active Service** | `AnnouncementService` | `UserService` | `UserController` / `Api*Controller` |
-| **Transactions & Rollback** | Yes (via `get_db_session()`) | No (Direct dict mutation) | No (Validation only) |
+### 5.1. Request Logging Middleware (`app/core/middleware.py`)
+Intercepts every HTTP transaction through `RequestLoggingMiddleware`:
+- **Format:** `[YYYY-MM-DD HH:MM:SS UTC] <METHOD> <PATH> - Status: <CODE> - Duration: <DURATION>ms`
+- **Output:** Streamed to console at `INFO` level.
 
----
+### 5.2. Safe Global 5xx Exception Handling (`app/core/exceptions.py`)
+- Catches unhandled `Exception` and 5xx HTTP exceptions.
+- Server-side: Logs full stack traces with `exc_info=True` into `logs/error.log`.
+- Client response: Returns sanitized response (`500 Internal Server Error`) without disclosing sensitive internal paths, database details, or credentials.
 
-## 6. API Schemas & Data Transfer Objects (DTOs)
+### 5.3. Custom 404 Handling (`app/core/exceptions.py` & `app/templates/404.html`)
+- **Browser Routes:** Renders a responsive Istanbul University branded HTML 404 page with navigation links.
+- **API Routes (`/api/*` or JSON clients):** Returns a clean JSON envelope:
+  ```json
+  {
+    "status": "error",
+    "message": "Resource not found",
+    "detail": "Not Found"
+  }
+  ```
 
-The system defines decoupled request/response schemas in [`app/schemas/`](app/schemas/) to prevent internal model exposure and validate client inputs:
-
-### 6.1. Announcement Schemas (`app/schemas/announcement_schemas.py`)
-- `AnnouncementCreateRequest`: Validates `title` (min length 1), `content` (min length 1), `created_by` (optional int).
-- `AnnouncementUpdateRequest`: Full update schema (PUT).
-- `AnnouncementPatchRequest`: Partial update schema (PATCH) where all fields are optional.
-- `AnnouncementResponseData`: Outgoing representation with `id`, `title`, `content`, `created_by`.
-- `AnnouncementApiResponse`: Envelope schema `{"status": str, "message": Optional[str], "data": Optional[...]}`.
-- `AnnouncementListApiResponse`: Collection envelope `{"status": str, "data": List[...], "count": int}`.
-- `AnnouncementDeleteApiResponse`: Deletion response `{"status": str, "message": str}`.
-
-### 6.2. User Schemas (`app/schemas/user_schemas.py`)
-- `UserCreateRequest`: Validates `name`, `email`, `department`, `graduation_year`.
-- `UserUpdateRequest`: Full update schema for PUT.
-- `UserPatchRequest`: Partial update schema for PATCH.
-- `UserResponseData`: Outgoing serialized user model.
-- `UserApiResponse`, `UserListApiResponse`, `UserDeleteApiResponse`: Standard envelope schemas.
-
----
-
-## 7. Future Schema Evolution & Roadmap
-
-When the system advances to full database migration for users and related modules:
-
-1. **`users` Table:**  
-   Implement a `UserDB(Base)` SQLAlchemy model with table `users` (`id`, `name`, `email`, `department`, `graduation_year`, `created_at`).
-2. **Foreign Key Formalization:**  
-   Add a formal database foreign key on `announcements.created_by`:
-   ```python
-   # Future enhancement:
-   created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-   ```
-3. **Relational Relationships:**  
-   Configure SQLAlchemy ORM relationships:
-   - `UserDB.announcements = relationship("AnnouncementDB", back_populates="author")`
-   - `AnnouncementDB.author = relationship("UserDB", back_populates="announcements")`
-4. **Database Migrations:**  
-   Introduce Alembic to manage database schema versioning and schema migrations.
+### 5.4. Log File Management & `.gitignore`
+- Runtime log files are written to `logs/error.log`.
+- `.gitignore` is configured with `logs/` and `*.log` to ensure error traces and runtime logs are never committed.

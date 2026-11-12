@@ -2,6 +2,7 @@
 
 from typing import Union
 from fastapi import APIRouter, Path as PathParam
+from app.core.config import settings
 from app.schemas.test_schemas import HelloResponse, SumResponse
 from app.services.calculator_service import CalculatorService
 
@@ -55,3 +56,15 @@ async def get_sum(
         operation="sum",
         result=calculated_result,
     )
+
+
+# Conditionally register 500 test route only in development mode (when DEBUG is True)
+if settings.DEBUG:
+    @test_router.get(
+        "/api/test/error-500",
+        summary="Simulate 500 Internal Error",
+        description="Simulates an unhandled internal exception to verify safe 5xx error handling and error logging.",
+    )
+    async def simulate_500_error():
+        """Raises an unhandled exception for testing safe 5xx handling."""
+        raise RuntimeError("Simulated unhandled internal server error for testing")

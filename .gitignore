@@ -10,3 +10,7 @@ __pycache__/
 !example.env
 .idea/
 .vscode/
+
+# Runtime log files
+logs/
+*.log
