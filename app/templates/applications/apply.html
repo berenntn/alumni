@@ -3,47 +3,57 @@
 {% block title %}İş Başvurusu | Mezun Takip Sistemi{% endblock %}
 
 {% block content %}
-<section style="max-width: 650px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 12px;">
+<section style="max-width: 650px; margin: 3rem auto; padding: 1.5rem;">
+  <div class="card" style="padding: 2.5rem;">
 
-  <h1>İş Başvurusu</h1>
+    <h1 style="font-family: var(--font-display); font-size: var(--font-size-large-title); color: var(--carbon); margin-bottom: 0.5rem;">İş Başvurusu</h1>
 
-  <h2>{{ job.title }}</h2>
-  <p><strong>Şirket:</strong> {{ job.company_name }}</p>
-  <p><strong>Konum:</strong> {{ job.location or "Belirtilmedi" }}</p>
-
-  {% if error_message %}
-    <div class="alert-error" style="padding: 1rem; margin: 1rem 0;">
-      {{ error_message }}
+    <div style="background-color: var(--frost); border: 1px solid var(--pebble); border-radius: var(--radius-card); padding: 1.25rem 1.5rem; margin: 1.5rem 0 2rem;">
+      <h2 style="font-family: var(--font-display); font-size: var(--font-size-title-3); color: var(--carbon); margin: 0 0 0.5rem;">{{ job.title }}</h2>
+      <p style="color: var(--carbon); margin: 0 0 0.25rem;"><strong>Şirket:</strong> {{ job.company_name }}</p>
+      <p style="color: var(--graphite); margin: 0;"><strong>Konum:</strong> {{ job.location or "Belirtilmedi" }}</p>
     </div>
-  {% endif %}
 
-  {% if success_message %}
-    <div class="alert-success" style="padding: 1rem; margin: 1rem 0;">
-      {{ success_message }}
+    {% if error_message %}
+      <div class="alert alert-error">
+        {{ error_message }}
+      </div>
+    {% endif %}
+
+    {% if success_message %}
+      <div class="alert alert-success">
+        {{ success_message }}
+      </div>
+    {% else %}
+      <form method="post" action="/jobs/{{ job.id }}/apply">
+        <div class="form-group" style="margin-bottom: 1.75rem;">
+          <label for="user_id" style="font-weight: 500; font-size: var(--font-size-subhead); color: var(--carbon); margin-bottom: 0.5rem;">
+            Kullanıcı Numaranız (Mezun ID) <span style="color: var(--error);">*</span>
+          </label>
+          <input
+            type="number"
+            id="user_id"
+            name="user_id"
+            min="1"
+            required
+            class="form-input"
+            placeholder="Örn: 1"
+            style="width: 100%;"
+          >
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem 1.5rem; font-size: 1rem;">
+          Başvuruyu Gönder &rarr;
+        </button>
+      </form>
+    {% endif %}
+
+    <div style="margin-top: 2rem; text-align: center;">
+      <a href="/jobs" class="btn btn-outline" style="font-size: var(--font-size-footnote);">
+        &larr; İş ilanlarına dön
+      </a>
     </div>
-  {% else %}
-    <form method="post" action="/jobs/{{ job.id }}/apply">
-      <label for="user_id">Kullanıcı Numaranız</label>
 
-      <input
-        type="number"
-        id="user_id"
-        name="user_id"
-        min="1"
-        required
-        style="display: block; width: 100%; padding: 0.8rem; margin: 0.5rem 0 1.5rem;"
-      >
-
-      <button type="submit"
-              style="background: #1d4ed8; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 8px; cursor: pointer;">
-        Başvuruyu Gönder
-      </button>
-    </form>
-  {% endif %}
-
-  <p style="margin-top: 1.5rem;">
-    <a href="/jobs">← İş ilanlarına dön</a>
-  </p>
-
+  </div>
 </section>
 {% endblock %}
