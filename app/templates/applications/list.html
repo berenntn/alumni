@@ -3,38 +3,46 @@
 {% block title %}İş Başvuruları | Mezun Takip Sistemi{% endblock %}
 
 {% block content %}
-<section style="max-width: 1000px; margin: 2rem auto; padding: 1rem;">
-  <h1>İş Başvuruları</h1>
-  <p>Mezunların iş ilanlarına yaptığı başvurular.</p>
+<section style="max-width: 1000px; margin: 0 auto; padding: 2.5rem 1.5rem;">
+  <h1 style="font-family: var(--font-display); font-size: var(--font-size-large-title); color: var(--carbon); margin-bottom: 0.5rem;">İş Başvuruları</h1>
+  <p style="color: var(--graphite); font-size: var(--font-size-body); margin-bottom: 2rem;">Mezunların iş ilanlarına yaptığı başvurular.</p>
 
   {% if applications %}
-    <div style="display: grid; gap: 1rem; margin-top: 2rem;">
+    <div style="display: grid; gap: 1.5rem;">
       {% for application in applications %}
-        <article style="background: white; padding: 1.5rem; border: 1px solid #e5e7eb; border-radius: 12px;">
-          <h2>{{ application.job_title }}</h2>
-          <p><strong>Şirket:</strong> {{ application.company_name }}</p>
-          <p><strong>Başvuran:</strong> {{ application.user_name }}</p>
-          <p><strong>Başvuru No:</strong> {{ application.id }}</p>
-          <p><strong>Durum:</strong>
-            {% if application.status == "pending" %}
-              Beklemede
-            {% elif application.status == "accepted" %}
-              Kabul Edildi
-            {% elif application.status == "rejected" %}
-              Reddedildi
-            {% else %}
-              {{ application.status }}
-            {% endif %}
-          </p>
+        <article class="card" style="padding: 1.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+            <h2 style="font-family: var(--font-display); font-size: var(--font-size-title-2); color: var(--carbon); margin: 0;">{{ application.job_title }}</h2>
+            <span class="pill" style="font-size: var(--font-size-caption-1); font-weight: 500;
+              {% if application.status == 'accepted' %}background: var(--success-bg); color: #248a3d; border-color: rgba(52, 199, 89, 0.3);
+              {% elif application.status == 'rejected' %}background: var(--error-bg); color: #a01a14; border-color: rgba(255, 59, 48, 0.3);
+              {% else %}background: var(--ice); color: var(--apple-blue); border-color: rgba(0, 113, 227, 0.25);{% endif %}">
+              {% if application.status == "pending" %}
+                Beklemede
+              {% elif application.status == "accepted" %}
+                Kabul Edildi
+              {% elif application.status == "rejected" %}
+                Reddedildi
+              {% else %}
+                {{ application.status }}
+              {% endif %}
+            </span>
+          </div>
+
+          <p style="color: var(--carbon); margin-bottom: 0.35rem;"><strong>Şirket:</strong> {{ application.company_name }}</p>
+          <p style="color: var(--graphite); margin-bottom: 0.35rem;"><strong>Başvuran:</strong> {{ application.user_name }}</p>
+          <p style="color: var(--mist); font-size: var(--font-size-footnote); margin: 0;"><strong>Başvuru No:</strong> #{{ application.id }}</p>
         </article>
       {% endfor %}
     </div>
   {% else %}
-    <p>Henüz iş başvurusu bulunmuyor.</p>
+    <div class="card" style="text-align: center; padding: 3rem 1.5rem; color: var(--graphite);">
+      <p style="margin: 0; font-size: var(--font-size-body);">Henüz iş başvurusu bulunmuyor.</p>
+    </div>
   {% endif %}
 
   <p style="margin-top: 2rem;">
-    <a href="/jobs">← İş ilanlarına dön</a>
+    <a href="/jobs" class="btn btn-outline">&larr; İş ilanlarına dön</a>
   </p>
 </section>
 {% endblock %}

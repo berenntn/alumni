@@ -7,15 +7,16 @@
   <meta name="description" content="{{ app_description }}">
   
   <!-- Favicon / Brand Symbol (inline SVG) -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f2744'/><text x='50%' y='65%' font-size='50' font-weight='bold' fill='%23fbbf24' text-anchor='middle'>İÜ</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230071e3'/><text x='50%' y='65%' font-size='48' font-weight='bold' fill='%23ffffff' text-anchor='middle'>İÜ</text></svg>">
 
-  <!-- Custom Stylesheet -->
+  <!-- Design System Stylesheets -->
+  <link rel="stylesheet" href="/static/css/brand.css">
   <link rel="stylesheet" href="/static/css/style.css">
   {% block extra_head %}{% endblock %}
 </head>
 <body>
 
-  <!-- Navigation Bar -->
+  <!-- Navigation Bar (Apple Frosted Glass Style) -->
   <header class="navbar">
     <div class="nav-container">
       <a href="/" class="brand">
@@ -30,14 +31,12 @@
       <nav>
         <ul class="nav-links" id="navLinks">
           <li><a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">Ana Sayfa</a></li>
-          <li><a href="/users" class="nav-link {% if request.url.path.startswith('/users') %}active{% endif %}">Mezunlar (Users)</a></li>
-          <li><a href="/announcements" class="nav-link {% if request.url.path.startswith('/announcements') %}active{% endif %}">Duyurular (Announcements)</a></li>
+          <li><a href="/users" class="nav-link {% if request.url.path.startswith('/users') %}active{% endif %}">Mezunlar</a></li>
           <li><a href="/jobs" class="nav-link {% if request.url.path.startswith('/jobs') %}active{% endif %}">İş İlanları</a></li>
           <li><a href="/applications" class="nav-link {% if request.url.path.startswith('/applications') %}active{% endif %}">Başvurular</a></li>
+          <li><a href="/announcements" class="nav-link {% if request.url.path.startswith('/announcements') %}active{% endif %}">Duyurular</a></li>
           <li><a href="/about" class="nav-link {% if request.url.path == '/about' %}active{% endif %}">Hakkında</a></li>
-          <li><a href="/docs" target="_blank" rel="noopener noreferrer" class="nav-link">API Dokümantasyonu (Swagger)</a></li>
-          <li><a href="/redoc" target="_blank" rel="noopener noreferrer" class="nav-link">ReDoc</a></li>
-          <li><a href="/docs" class="nav-cta">API Docs &rarr;</a></li>
+          <li><a href="/docs" target="_blank" rel="noopener noreferrer" class="nav-cta">API Docs &rarr;</a></li>
         </ul>
       </nav>
 
@@ -55,39 +54,44 @@
     {% block content %}{% endblock %}
   </main>
 
-  <!-- Footer -->
+  <!-- Footer (Apple Minimalist Clean Style) -->
   <footer class="footer">
     <div class="footer-container">
       <div class="footer-brand">
         <h4>{{ app_title_tr }}</h4>
         <p>{{ app_description }}</p>
+        <p style="margin-top: 0.75rem; color: var(--mist); font-size: 0.8125rem;">
+          İstanbul Üniversitesi &bull; 1453'ten Günümüze Köklü Miras
+        </p>
       </div>
 
       <div class="footer-column">
-        <h5>Hızlı Bağlantılar</h5>
+        <h5>Platform Bağlantıları</h5>
         <ul>
-          <li><a href="/">Ana Sayfa (Home)</a></li>
-          <li><a href="/users">Mezunlar Listesi (/users)</a></li>
-          <li><a href="/announcements">Duyurular (/announcements)</a></li>
-          <li><a href="/about">Proje Hakkında (About)</a></li>
-          <li><a href="/docs">Swagger UI (/docs)</a></li>
-          <li><a href="/redoc">ReDoc (/redoc)</a></li>
+          <li><a href="/">Ana Sayfa</a></li>
+          <li><a href="/users">Mezun Rehberi</a></li>
+          <li><a href="/jobs">Kariyer & İş İlanları</a></li>
+          <li><a href="/applications">İş Başvurularım</a></li>
+          <li><a href="/announcements">Üniversite Duyuruları</a></li>
+          <li><a href="/about">Proje Mimarisi (About)</a></li>
         </ul>
       </div>
 
       <div class="footer-column">
-        <h5>Test Uç Noktaları</h5>
+        <h5>Geliştirici & API</h5>
         <ul>
-          <li><a href="/hello" target="_blank">GET /hello</a></li>
-          <li><a href="/hello/IstanbulUniversitesi" target="_blank">GET /hello/{name}</a></li>
-          <li><a href="/sum/15/27" target="_blank">GET /sum/{n1}/{n2}</a></li>
+          <li><a href="/docs" target="_blank">OpenAPI & Swagger UI (/docs)</a></li>
+          <li><a href="/redoc" target="_blank">ReDoc Dokümantasyonu (/redoc)</a></li>
+          <li><a href="/api/health" target="_blank">GET /api/health (Durum)</a></li>
+          <li><a href="/hello" target="_blank">GET /hello (Test)</a></li>
+          <li><a href="/sum/15/27" target="_blank">GET /sum/15/27 (Hesaplama)</a></li>
         </ul>
       </div>
     </div>
 
     <div class="footer-bottom">
-      <p>&copy; 2026 İstanbul Üniversitesi Web Programlama Dersi. Tüm hakları saklıdır.</p>
-      <p>Geliştirici Mimarisi: FastAPI &bull; PostgreSQL &bull; SQLAlchemy &bull; Docker</p>
+      <p>&copy; 2026 İstanbul Üniversitesi Mezun Takip Sistemi. Tüm hakları saklıdır.</p>
+      <p>FastAPI &bull; SQLAlchemy &bull; PostgreSQL &bull; Apple HIG Tasarım Sistemi</p>
     </div>
   </footer>
 

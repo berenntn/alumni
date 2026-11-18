@@ -3,28 +3,28 @@
 {% block title %}404 - Sayfa Bulunamadı | {{ app_title_tr }}{% endblock %}
 
 {% block content %}
-<section style="max-width: 800px; margin: 3rem auto; padding: 2.5rem 1.5rem; text-align: center; background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(15, 39, 68, 0.08); border: 1px solid #e5e7eb;">
+<section class="card" style="max-width: 700px; margin: 4rem auto; padding: 3.5rem 2rem; text-align: center;">
   
-  <div style="display: inline-flex; align-items: center; justify-content: center; width: 96px; height: 96px; border-radius: 50%; background: #fef3c7; color: #d97706; font-size: 2.5rem; font-weight: 800; margin-bottom: 1.5rem;">
+  <div style="display: inline-flex; align-items: center; justify-content: center; width: 88px; height: 88px; border-radius: 50%; background: var(--ice); color: var(--apple-blue); font-size: 2.25rem; font-weight: 700; margin-bottom: 1.5rem; border: 1px solid var(--pebble); font-family: var(--font-display);">
     404
   </div>
 
-  <h1 style="color: #0f2744; font-size: 2rem; margin-bottom: 0.75rem;">
+  <h1 style="font-family: var(--font-display); color: var(--carbon); font-size: var(--font-size-title-1); margin-bottom: 0.75rem;">
     Aradığınız Sayfa Bulunamadı
   </h1>
 
-  <p style="color: #4b5563; font-size: 1.1rem; max-width: 540px; margin: 0 auto 2rem; line-height: 1.6;">
+  <p style="color: var(--graphite); font-size: var(--font-size-body); max-width: 500px; margin: 0 auto 2rem; line-height: 1.5;">
     {{ detail or "İstediğiniz sayfa kaldırılmış, adı değiştirilmiş veya geçici olarak kullanım dışı kalmış olabilir." }}
   </p>
 
-  <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-    <a href="/" style="display: inline-block; padding: 0.75rem 1.5rem; background: #0f2744; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">
+  <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+    <a href="/" class="btn btn-primary">
       &larr; Ana Sayfaya Dön
     </a>
-    <a href="/jobs" style="display: inline-block; padding: 0.75rem 1.5rem; background: #d97706; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">
+    <a href="/jobs" class="btn btn-outline">
       İş İlanları
     </a>
-    <a href="/announcements" style="display: inline-block; padding: 0.75rem 1.5rem; background: #f3f4f6; color: #1f2937; border-radius: 8px; text-decoration: none; font-weight: 600; border: 1px solid #d1d5db;">
+    <a href="/announcements" class="btn btn-outline">
       Duyurular
     </a>
   </div>
