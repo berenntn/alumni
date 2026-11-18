@@ -1,0 +1,12 @@
+:root {
+  --color-primary: #0f2744;
+  --color-primary-light: #1e3a5f;
+  --color-accent: #d97706;
+  --color-bg: #f8fafc;
+  --color-text: #1f2937;
+  --color-success: #16a34a;
+  --color-error: #dc2626;
+  --font-heading: "Merriweather", Georgia, serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --radius: 8px;
+}
