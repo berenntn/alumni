@@ -936,3 +936,6 @@ curl -i -X GET http://localhost:8000/sayfa-bulunamadi-ornek \
 curl -X GET http://localhost:8000/api/test/error-500 \
   -H "Accept: application/json"
 ```
+## Brand Guidelines
+
+For information about the project's brand identity, colors, typography, and visual guidelines, see [Brand Guidelines](brand.md).
