@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <circle cx="60" cy="60" r="56" fill="#0f2744"/>
+  <polygon points="60,28 100,48 60,68 20,48" fill="#d97706"/>
+  <rect x="44" y="62" width="32" height="18" rx="3" fill="#d97706"/>
+  <text x="60" y="104" font-family="Georgia, serif" font-size="14"
+        fill="#ffffff" text-anchor="middle">İÜ</text>
+</svg>

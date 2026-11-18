@@ -1,23 +1,502 @@
 {% extends "base.html" %}
-{% block content %}
+
+{% block title %}Ana Sayfa | {{ app_title_tr }} - {{ app_name }}{% endblock %}
+
+{% block extra_head %}
+<!-- Google Fonts: Inter & Merriweather -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/brand.css">
 <link rel="stylesheet" href="/static/css/home.css">
+{% endblock %}
 
-<section class="hero">
-  <h1>İstanbul Üniversitesi Mezun Ağı</h1>
-  <p>Mezunlarla, öğrencilerle ve üniversiteyle bağını koruma. Duyurular, iş ilanları ve kariyer fırsatları tek yerde.</p>
-  <a class="btn btn-gold" href="/users">Mezunları Keşfet</a>
-  <a class="btn btn-outline" href="/jobs">İş İlanları</a>
+{% block content %}
+<!-- 1. Welcoming Hero Section -->
+<section class="hero-wrapper">
+  <div class="hero-container">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        İÜ Mezun &bull; Bağ Kurmaya Devam Et
+      </div>
+
+      <h1 class="hero-title">{{ app_title_tr }}</h1>
+      <p class="hero-slogan">"Bağ kurmaya devam et."</p>
+
+      <p class="hero-description">
+        İstanbul Üniversitesi mezunları, halen eğitim gören öğrencileri ve akademik kadrosu arasındaki
+        köprüyü kuran profesyonel mezun platformu. Dönem arkadaşlarınızla yeniden buluşun, kariyer
+        fırsatlarını keşfedin ve üniversitemizin köklü geleceğine katkı sağlayın.
+      </p>
+
+      <div class="hero-actions">
+        <a href="/jobs" class="btn btn-gold">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+          </svg>
+          İş İlanlarını İncele &rarr;
+        </a>
+        <a href="/announcements" class="btn btn-outline">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+          </svg>
+          Duyuruları Gör
+        </a>
+        <a href="/users" class="btn btn-outline">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+          Mezun Rehberi
+        </a>
+      </div>
+    </div>
+
+    <!-- Hero Status Card -->
+    <div class="hero-showcase">
+      <div class="hero-card">
+        <div class="hero-card-header">
+          <img src="/static/images/logo.svg" alt="İstanbul Üniversitesi Mezun Logosu" class="hero-card-logo">
+          <div>
+            <h3>İÜ Mezun Portalı</h3>
+            <p>Resmi Mezun Bilgi Ağı</p>
+          </div>
+        </div>
+
+        <div class="hero-features-list">
+          <div class="hero-feature-item">
+            <svg class="hero-feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>Mezunlara özel açık iş ve staj fırsatları</span>
+          </div>
+
+          <div class="hero-feature-item">
+            <svg class="hero-feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>Rektörlük ve fakültelerden doğrulanmış duyurular</span>
+          </div>
+
+          <div class="hero-feature-item">
+            <svg class="hero-feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>Bölüm ve mezuniyet yılına göre mezun rehberi</span>
+          </div>
+
+          <div class="hero-feature-item">
+            <svg class="hero-feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>Çevrimiçi başvuru ve süreç takibi</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; pt: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+          <a href="/applications" class="btn btn-gold" style="width: 100%;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+            </svg>
+            Başvurularım & Süreç Takibi
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
-<section class="features">
-  <div class="card"><h3>Mezun Rehberi</h3><p>Bölüm ve mezuniyet yılına göre mezunlara ulaş.</p></div>
-  <div class="card"><h3>İş İlanları</h3><p>Mezunlardan ve şirketlerden güncel fırsatlar, tek tıkla başvuru.</p></div>
-  <div class="card"><h3>Duyurular</h3><p>Üniversiteden etkinlik ve haberler.</p></div>
+<!-- 2. Statistics Ribbon -->
+<section class="stats-section">
+  <div class="stats-container">
+    <div class="stat-item">
+      <span class="stat-value">1000+</span>
+      <span class="stat-label">Kayıtlı Mezun</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value">50+</span>
+      <span class="stat-label">İş & Staj İlanı</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value">20+</span>
+      <span class="stat-label">Resmi Duyuru</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value">1453</span>
+      <span class="stat-label">Köklü Akademik Miras</span>
+    </div>
+  </div>
 </section>
 
-<section class="stats">
-  <div><strong>1000+</strong>Mezun</div>
-  <div><strong>50+</strong>İş İlanı</div>
-  <div><strong>20+</strong>Duyuru</div>
+<!-- 3. Gateway / Core Platform Modules -->
+<section class="section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-badge">Hızlı Erişim</span>
+      <h2 class="section-title">Mezun Portalı Hizmetleri</h2>
+      <p class="section-subtitle">
+        Üniversiteniz ve mezun topluluğunuzla sürekli irtibat halinde kalabileceğiniz ana modüller.
+      </p>
+    </div>
+
+    <div class="gateway-grid">
+      <!-- Card 1: Jobs -->
+      <article class="gateway-card">
+        <div class="gateway-icon-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <h3>İş & Kariyer İlanları</h3>
+        <p>
+          Mezunlarımıza ve son sınıf öğrencilerimize özel paylaşılan iş ve staj fırsatlarını keşfedin, doğrudan başvuru yapın.
+        </p>
+        <a href="/jobs" class="gateway-link">
+          İlanları İncele &rarr;
+        </a>
+      </article>
+
+      <!-- Card 2: Applications -->
+      <article class="gateway-card">
+        <div class="gateway-icon-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+          </svg>
+        </div>
+        <h3>Başvuru Yönetimi</h3>
+        <p>
+          İş ilanlarına gerçekleştirdiğiniz başvuruları görüntüleyin, değerlendirme süreçlerini tek ekrandan takip edin.
+        </p>
+        <a href="/applications" class="gateway-link">
+          Başvuruları Yönet &rarr;
+        </a>
+      </article>
+
+      <!-- Card 3: Announcements -->
+      <article class="gateway-card">
+        <div class="gateway-icon-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path>
+          </svg>
+        </div>
+        <h3>Duyurular & Haberler</h3>
+        <p>
+          Üniversite rektörlüğü, mezunlar derneği etkinlikleri, konferanslar ve mezun buluşmalarından haberdar olun.
+        </p>
+        <a href="/announcements" class="gateway-link">
+          Duyuruları Oku &rarr;
+        </a>
+      </article>
+
+      <!-- Card 4: Directory / Users -->
+      <article class="gateway-card">
+        <div class="gateway-icon-box">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+        </div>
+        <h3>Mezun Rehberi</h3>
+        <p>
+          Bölüm, fakülte ve mezuniyet yılı bazında mezunlara ulaşın, profesyonel sektör ağınızı genişletin.
+        </p>
+        <a href="/users" class="gateway-link">
+          Mezunları Keşfet &rarr;
+        </a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Platform Values & Solidarity Pillars -->
+<section class="section values-section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-badge">Neden İÜ Mezun Ağı?</span>
+      <h2 class="section-title">Birlikte Daha Güçlü Bir Topluluk</h2>
+      <p class="section-subtitle">
+        İstanbul Üniversitesi mezunlar ailesi, akademik ve mesleki dayanışmayı nesiller boyu sürdürür.
+      </p>
+    </div>
+
+    <div class="values-grid">
+      <div class="value-card">
+        <h4>
+          <svg width="22" height="22" fill="none" stroke="#d97706" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          Kariyer & İstihdam Desteği
+        </h4>
+        <p>
+          Sektörde deneyim kazanmış kıdemli mezunlarımız ile iş hayatına yeni atılan genç mezunlarımız arasında doğrudan istihdam köprüleri kurulur.
+        </p>
+      </div>
+
+      <div class="value-card">
+        <h4>
+          <svg width="22" height="22" fill="none" stroke="#d97706" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+          </svg>
+          Öğrenci - Mezun Mentorluğu
+        </h4>
+        <p>
+          Üniversitemizde eğitimine devam eden öğrencilere kariyer rehberliği, staj imkanları ve vizyon kazandıran mentorluk programları sağlanır.
+        </p>
+      </div>
+
+      <div class="value-card">
+        <h4>
+          <svg width="22" height="22" fill="none" stroke="#d97706" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+          </svg>
+          Köklü Üniversite Aidiyeti
+        </h4>
+        <p>
+          1453 yılından bugüne uzanan kurumsal kültürün bir parçası olarak kampüsle ve hocalarınızla bağınızı hiçbir zaman koparmazsınız.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Highlights Preview: Jobs & Announcements -->
+<section class="section">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-badge">Güncel Fırsatlar</span>
+      <h2 class="section-title">Ağımızdan Son Paylaşımlar</h2>
+      <p class="section-subtitle">
+        Topluluğumuzda yakın zamanda yayınlanan iş ilanları ve resmi duyurular.
+      </p>
+    </div>
+
+    <div class="feed-grid">
+      <!-- Column 1: Jobs Preview -->
+      <div class="feed-column">
+        <div class="feed-column-header">
+          <h3 class="feed-column-title">
+            <svg width="20" height="20" fill="none" stroke="#d97706" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+            Son İş İlanları
+          </h3>
+          <a href="/jobs" class="feed-see-all">Tüm İlanlar &rarr;</a>
+        </div>
+
+        <div class="feed-list">
+          {% if jobs %}
+            {% for job in jobs %}
+              <div class="feed-item">
+                <div class="feed-item-header">
+                  <span class="feed-item-title">{{ job.title }}</span>
+                  {% if job.employment_type %}
+                    <span class="feed-tag">{{ job.employment_type }}</span>
+                  {% endif %}
+                </div>
+                <div class="feed-item-meta">
+                  <strong>{{ job.company_name }}</strong> &bull; {{ job.location or "Lokasyon Belirtilmedi" }}
+                </div>
+                {% if job.description %}
+                  <p class="feed-item-desc">{{ job.description[:120] }}{% if job.description|length > 120 %}...{% endif %}</p>
+                {% endif %}
+                <a href="/jobs/{{ job.id }}/apply" class="feed-item-action">Hemen Başvur &rarr;</a>
+              </div>
+            {% endfor %}
+          {% else %}
+            <!-- Curated placeholder cards if no jobs in database yet -->
+            <div class="feed-item">
+              <div class="feed-item-header">
+                <span class="feed-item-title">Junior Python / Backend Developer</span>
+                <span class="feed-tag">Full-time</span>
+              </div>
+              <div class="feed-item-meta">TechNova Solutions &bull; Istanbul / Hybrid</div>
+              <p class="feed-item-desc">FastAPI ve modern ilişkisel veritabanı altyapısıyla çalışacak mezun yazılım mühendisleri aranmaktadır.</p>
+              <a href="/jobs" class="feed-item-action">İlana Göz At &rarr;</a>
+            </div>
+            <div class="feed-item">
+              <div class="feed-item-header">
+                <span class="feed-item-title">Veri Analitiği Stajyeri</span>
+                <span class="feed-tag">Internship</span>
+              </div>
+              <div class="feed-item-meta">DataBridge Global &bull; Remote</div>
+              <p class="feed-item-desc">Son sınıf öğrencileri ve yeni mezunlar için iş zekası ve veri modelleme staj fırsatı.</p>
+              <a href="/jobs" class="feed-item-action">İlana Göz At &rarr;</a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Column 2: Announcements Preview -->
+      <div class="feed-column">
+        <div class="feed-column-header">
+          <h3 class="feed-column-title">
+            <svg width="20" height="20" fill="none" stroke="#d97706" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+            </svg>
+            Üniversite Duyuruları
+          </h3>
+          <a href="/announcements" class="feed-see-all">Tüm Duyurular &rarr;</a>
+        </div>
+
+        <div class="feed-list">
+          {% if announcements %}
+            {% for ann in announcements %}
+              <div class="feed-item">
+                <div class="feed-item-header">
+                  <span class="feed-item-title">{{ ann.title }}</span>
+                  <span class="feed-tag">Duyuru</span>
+                </div>
+                <p class="feed-item-desc">{{ ann.content[:140] }}{% if ann.content|length > 140 %}...{% endif %}</p>
+                <a href="/announcements/{{ ann.id }}" class="feed-item-action">Detayları Oku &rarr;</a>
+              </div>
+            {% endfor %}
+          {% else %}
+            <!-- Curated placeholder cards if no announcements in database yet -->
+            <div class="feed-item">
+              <div class="feed-item-header">
+                <span class="feed-item-title">Bahar Dönemi Mezunlar Buluşması 2026</span>
+                <span class="feed-tag">Etkinlik</span>
+              </div>
+              <p class="feed-item-desc">Tüm fakülte mezunlarımız Beyazıt Merkez Kampüsü Rektörlük Bahçesi'nde geleneksel buluşmada bir araya geliyor.</p>
+              <a href="/announcements" class="feed-item-action">Detayları Oku &rarr;</a>
+            </div>
+            <div class="feed-item">
+              <div class="feed-item-header">
+                <span class="feed-item-title">Kariyer Merkezi Mentorluk Kayıtları Başladı</span>
+                <span class="feed-tag">Akademik</span>
+              </div>
+              <p class="feed-item-desc">Deneyimlerinizi son sınıf öğrencilerine aktarmak için online mentorluk programına kayıt olabilirsiniz.</p>
+              <a href="/announcements" class="feed-item-action">Detayları Oku &rarr;</a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Interactive Developer & Live API Sandbox (Preserved for full platform testing) -->
+<section class="section sandbox-section" id="api-sandbox">
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-badge">Geliştirici & Test Paneli</span>
+      <h2 class="section-title">Canlı API & Servis Konsolu</h2>
+      <p class="section-subtitle">
+        FastAPI arka uç servislerimizi doğrudan bu konsoldan test edebilir veya
+        <a href="/docs" target="_blank" style="color: var(--color-accent); font-weight: 600; text-decoration: underline;">Swagger UI (/docs)</a>
+        aracılığıyla inceleyebilirsiniz.
+      </p>
+    </div>
+
+    <div class="sandbox-container">
+      <!-- Endpoint Selection Cards -->
+      <div class="endpoint-list">
+        <!-- Test Endpoint 1: /hello -->
+        <div class="endpoint-card selected" data-url="/hello">
+          <div class="endpoint-header">
+            <div>
+              <span class="endpoint-badge">GET</span>
+              <span class="endpoint-path">/hello</span>
+            </div>
+            <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 600;">Seçili &bull; Tıkla</span>
+          </div>
+          <div class="endpoint-desc">
+            Sistemin çalıştığını doğrulayan "Hello, World!" JSON yanıtını döndürür.
+          </div>
+        </div>
+
+        <!-- Test Endpoint 2: /hello/{name} -->
+        <div class="endpoint-card" data-url="/hello/IstanbulUniversitesi">
+          <div class="endpoint-header">
+            <div>
+              <span class="endpoint-badge">GET</span>
+              <span class="endpoint-path">/hello/{name}</span>
+            </div>
+            <span style="font-size: 0.75rem; color: var(--color-text-muted); font-weight: 600;">Parametrik</span>
+          </div>
+          <div class="endpoint-desc">
+            URL parametresi olarak iletilen isme özel selamlama mesajı üretir.
+          </div>
+        </div>
+
+        <!-- Test Endpoint 3: /sum/{number1}/{number2} -->
+        <div class="endpoint-card" data-url="/sum/15/27">
+          <div class="endpoint-header">
+            <div>
+              <span class="endpoint-badge">GET</span>
+              <span class="endpoint-path">/sum/{number1}/{number2}</span>
+            </div>
+            <span style="font-size: 0.75rem; color: var(--color-text-muted); font-weight: 600;">Hesaplama</span>
+          </div>
+          <div class="endpoint-desc">
+            <code>CalculatorService</code> katmanında güvenli sayısal toplama işlemi yürütür.
+          </div>
+        </div>
+
+        <!-- Swagger Quick Card -->
+        <div style="background-color: #f0f9ff; border: 1px dashed rgba(2, 132, 199, 0.4); border-radius: 8px; padding: 1rem 1.25rem;">
+          <div style="font-weight: 700; color: #0284c7; font-size: 0.9rem; margin-bottom: 0.35rem;">
+            OpenAPI & Swagger Dokümantasyonu
+          </div>
+          <div style="font-size: 0.85rem; color: #0369a1; line-height: 1.5;">
+            Tüm REST API uç noktaları, Pydantic şemaları ve OpenAPI 3.1 spesifikasyonu için
+            <a href="/docs" target="_blank" style="font-weight: 700; text-decoration: underline;">/docs</a> sayfasını ziyaret edebilirsiniz.
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Terminal / Response Box -->
+      <div class="terminal-panel">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="terminal-title">HTTP Client &bull; Response Viewer</div>
+          <span id="responseStatusBadge" style="font-size: 0.75rem; font-family: var(--font-mono); color: #34d399;">200 OK</span>
+        </div>
+
+        <div class="terminal-body">
+          <div class="terminal-url-row">
+            <span class="terminal-method">GET</span>
+            <input type="text" id="terminalInputUrl" class="terminal-input-url" value="/hello" spellcheck="false" />
+            <button id="terminalRunBtn" class="terminal-run-btn">Çalıştır</button>
+          </div>
+
+          <div style="font-size: 0.75rem; color: #94a3b8; font-family: var(--font-mono);">
+            Yanıt Gövdesi (JSON Output):
+          </div>
+
+          <pre id="terminalOutputBox" class="terminal-output-box">Yükleniyor...</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. Call To Action Banner -->
+<section class="section" style="padding-top: 0;">
+  <div class="section-container">
+    <div class="cta-banner">
+      <h2>İstanbul Üniversitesi Mezun Ailesindeki Yerinizi Alın</h2>
+      <p>
+        Kariyer fırsatlarını yakalayın, etkinliklerden haberdar olun ve üniversitenizle bağınızı daima canlı tutun.
+      </p>
+      <div class="cta-buttons">
+        <a href="/jobs" class="btn btn-gold">
+          İş İlanları &rarr;
+        </a>
+        <a href="/users" class="btn btn-outline">
+          Mezunlar Rehberi
+        </a>
+        <a href="/announcements" class="btn btn-outline">
+          Duyurular
+        </a>
+        <a href="/applications" class="btn btn-outline">
+          Başvurularım
+        </a>
+      </div>
+    </div>
+  </div>
 </section>
 {% endblock %}

@@ -77,6 +77,44 @@ async def _extract_form_data(request: Request) -> Dict[str, Any]:
 async def get_landing_page(request: Request):
     """Renders the modern landing page for the Alumni Tracking System."""
     user_context = UserController.get_users()
+
+    # Safely fetch recent announcements
+    announcements_list = []
+    announcement_count = 0
+    try:
+        ann_res = AnnouncementController.get_announcements()
+        announcements_list = ann_res.get("announcements", [])[:3]
+        announcement_count = ann_res.get("count", 0)
+    except Exception:
+        pass
+
+    # Safely fetch recent job postings
+    jobs_list = []
+    job_count = 0
+    try:
+        from app.core.database import get_db_session
+        from app.models.job_posting import JobPostingDB
+        from sqlalchemy import select, func
+
+        with get_db_session() as session:
+            jobs_db = session.scalars(
+                select(JobPostingDB).order_by(JobPostingDB.id.desc()).limit(3)
+            ).all()
+            jobs_list = [
+                {
+                    "id": j.id,
+                    "title": j.title,
+                    "company_name": j.company_name,
+                    "location": j.location,
+                    "description": j.description,
+                    "employment_type": j.employment_type,
+                }
+                for j in jobs_db
+            ]
+            job_count = session.scalar(select(func.count(JobPostingDB.id))) or len(jobs_list)
+    except Exception:
+        pass
+
     return templates.TemplateResponse(
         request=request,
         name="index.html",
@@ -87,6 +125,10 @@ async def get_landing_page(request: Request):
             "app_version": settings.APP_VERSION,
             "users": user_context.get("users", []),
             "user_count": user_context.get("count", 0),
+            "announcements": announcements_list,
+            "announcement_count": announcement_count,
+            "jobs": jobs_list,
+            "job_count": job_count,
         },
     )
 
