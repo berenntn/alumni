@@ -28,7 +28,7 @@ Kullanıcı Bulunamadı | 404
   .edit-card {
     background: #ffffff;
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-card);
     box-shadow: var(--shadow-sm);
     padding: 2.5rem;
     max-width: 760px;
@@ -51,28 +51,28 @@ Kullanıcı Bulunamadı | 404
   .form-group label {
     font-size: 0.875rem;
     font-weight: 600;
-    color: var(--text-main);
+    color: var(--carbon);
   }
 
   .form-group label span.req {
-    color: #dc2626;
+    color: var(--error);
   }
 
   .form-input {
     padding: 0.75rem 1rem;
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-input);
     font-family: inherit;
     font-size: 0.95rem;
-    color: var(--text-main);
+    color: var(--carbon);
     background-color: #ffffff;
     transition: var(--transition);
   }
 
   .form-input:focus {
     outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-glow);
+    border-color: var(--apple-blue);
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.18);
   }
 
   .edit-actions {
@@ -87,7 +87,7 @@ Kullanıcı Bulunamadı | 404
   /* Alerts */
   .alert {
     padding: 1rem 1.25rem;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-card);
     margin-bottom: 2rem;
     display: flex;
     align-items: center;
@@ -96,9 +96,9 @@ Kullanıcı Bulunamadı | 404
   }
 
   .alert-error {
-    background-color: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #991b1b;
+    background-color: var(--error-bg);
+    border: 1px solid rgba(255, 59, 48, 0.3);
+    color: #a01a14;
   }
 </style>
 {% endblock %}
@@ -211,7 +211,7 @@ Kullanıcı Bulunamadı | 404
     {% else %}
     <div class="edit-card" style="text-align: center; padding: 3.5rem 1.5rem;">
       <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
-      <h3 style="font-size: 1.4rem; color: var(--primary); margin-bottom: 0.5rem;">Kullanıcı Bulunamadı</h3>
+      <h3 style="font-size: 1.4rem; color: var(--carbon); margin-bottom: 0.5rem;">Kullanıcı Bulunamadı</h3>
       <p style="color: var(--text-muted); margin-bottom: 2rem;">
         Düzenlemek istediğiniz kullanıcı kaydı bulunamadı.
       </p>

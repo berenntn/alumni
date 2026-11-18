@@ -92,7 +92,7 @@
   .user-card {
     background: #ffffff;
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-card);
     box-shadow: var(--shadow-sm);
     padding: 2rem;
     transition: var(--transition);
@@ -110,7 +110,7 @@
   .card-header-custom h2 {
     font-size: 1.35rem;
     font-weight: 700;
-    color: var(--primary);
+    color: var(--carbon);
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -132,28 +132,28 @@
   .form-group label {
     font-size: 0.875rem;
     font-weight: 600;
-    color: var(--text-main);
+    color: var(--carbon);
   }
 
   .form-group label span.req {
-    color: #dc2626;
+    color: var(--error);
   }
 
   .form-input {
     padding: 0.7rem 0.9rem;
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-input);
     font-family: inherit;
     font-size: 0.95rem;
-    color: var(--text-main);
+    color: var(--carbon);
     background-color: #ffffff;
     transition: var(--transition);
   }
 
   .form-input:focus {
     outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-glow);
+    border-color: var(--apple-blue);
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.18);
   }
 
   .form-actions {
@@ -175,82 +175,85 @@
   }
 
   .users-table th {
-    background-color: #f8fafc;
-    color: var(--text-muted);
-    font-weight: 700;
+    background-color: var(--frost);
+    color: var(--graphite);
+    font-weight: 600;
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     padding: 0.9rem 1.25rem;
-    border-bottom: 2px solid var(--border-subtle);
+    border-bottom: 1px solid var(--pebble);
   }
 
   .users-table td {
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--border-subtle);
-    color: var(--text-main);
+    border-bottom: 1px solid var(--pebble);
+    color: var(--carbon);
     vertical-align: middle;
   }
 
   .users-table tr:hover td {
-    background-color: #f8fafc;
+    background-color: var(--ice);
   }
 
   .user-badge-id {
     display: inline-block;
     padding: 0.2rem 0.6rem;
-    background-color: #e2e8f0;
-    color: var(--primary);
-    border-radius: var(--radius-sm);
+    background-color: var(--frost);
+    color: var(--carbon);
+    border: 1px solid var(--pebble);
+    border-radius: var(--radius-pill);
     font-size: 0.8rem;
     font-family: var(--font-mono);
-    font-weight: 700;
+    font-weight: 600;
   }
 
   .user-name-cell {
     font-weight: 600;
-    color: var(--primary);
+    color: var(--carbon);
   }
 
   .user-dept-cell {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    color: var(--text-main);
+    color: var(--graphite);
   }
 
   .user-year-badge {
-    background-color: var(--accent-subtle);
-    color: #92400e;
-    font-weight: 700;
-    padding: 0.25rem 0.6rem;
-    border-radius: var(--radius-full);
+    background-color: var(--ice);
+    color: var(--apple-blue);
+    border: 1px solid rgba(0, 113, 227, 0.2);
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-pill);
     font-size: 0.85rem;
   }
 
   .btn-sm {
-    padding: 0.35rem 0.75rem;
-    font-size: 0.825rem;
-    border-radius: var(--radius-sm);
+    padding: 0.35rem 0.85rem;
+    font-size: 0.8125rem;
+    border-radius: var(--radius-pill);
   }
 
   .btn-danger {
-    background-color: #dc2626;
-    color: #ffffff;
-    border: 1px solid #dc2626;
+    background-color: var(--error);
+    color: #ffffff !important;
+    border: 1px solid var(--error);
+    border-radius: var(--radius-pill);
   }
 
   .btn-danger:hover {
-    background-color: #b91c1c;
+    background-color: #d70015;
     color: #ffffff;
-    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
+    box-shadow: 0 4px 10px rgba(255, 59, 48, 0.25);
   }
 
   /* Empty State */
   .empty-state {
     text-align: center;
     padding: 3.5rem 1.5rem;
-    color: var(--text-muted);
+    color: var(--graphite);
   }
 
   .empty-state-icon {
@@ -262,7 +265,7 @@
   .empty-state-title {
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--primary);
+    color: var(--carbon);
     margin-bottom: 0.5rem;
   }
 
@@ -425,12 +428,12 @@
                   <span class="user-badge-id">#{{ u.id }}</span>
                 </td>
                 <td class="user-name-cell">
-                  <a href="/users/{{ u.id }}" style="color: var(--primary); text-decoration: underline;">
+                  <a href="/users/{{ u.id }}" style="color: var(--carbon); font-weight: 600;">
                     {{ u.name }}
                   </a>
                 </td>
                 <td>
-                  <a href="mailto:{{ u.email }}" style="color: var(--info); text-decoration: underline;">
+                  <a href="mailto:{{ u.email }}" style="color: var(--link-blue);">
                     {{ u.email }}
                   </a>
                 </td>

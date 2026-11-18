@@ -26,14 +26,14 @@ Duyuru Bulunamadı | 404
   }
 
   .detail-hero p {
-    color: #cbd5e1;
+    color: var(--graphite);
     font-size: 1.05rem;
   }
 
   .detail-card {
     background: #ffffff;
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-card);
     box-shadow: var(--shadow-sm);
     padding: 2.5rem;
     max-width: 800px;
@@ -52,21 +52,21 @@ Duyuru Bulunamadı | 404
   .announcement-avatar {
     width: 68px;
     height: 68px;
-    border-radius: var(--radius-md);
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    border-radius: var(--radius-card);
+    background: linear-gradient(135deg, var(--apple-blue) 0%, var(--signal-blue) 100%);
     color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2rem;
-    box-shadow: 0 4px 10px rgba(217, 119, 6, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 113, 227, 0.25);
     flex-shrink: 0;
   }
 
   .announcement-title-area h2 {
     font-size: 1.6rem;
     font-weight: 700;
-    color: var(--primary);
+    color: var(--carbon);
     margin-bottom: 0.35rem;
     line-height: 1.3;
   }
@@ -76,10 +76,11 @@ Duyuru Bulunamadı | 404
     align-items: center;
     gap: 0.4rem;
     padding: 0.25rem 0.75rem;
-    background-color: var(--accent-subtle);
-    color: #92400e;
-    font-weight: 700;
-    border-radius: var(--radius-full);
+    background-color: var(--ice);
+    color: var(--apple-blue);
+    border: 1px solid rgba(0, 113, 227, 0.2);
+    font-weight: 600;
+    border-radius: var(--radius-pill);
     font-size: 0.85rem;
   }
 
@@ -91,36 +92,36 @@ Duyuru Bulunamadı | 404
   }
 
   .detail-item {
-    background-color: #f8fafc;
+    background-color: var(--frost);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-card);
     padding: 1.25rem;
   }
 
   .detail-label {
     font-size: 0.8rem;
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--text-muted);
+    color: var(--graphite);
     margin-bottom: 0.35rem;
   }
 
   .detail-value {
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--text-main);
+    color: var(--carbon);
   }
 
   .announcement-content-box {
     background-color: #ffffff;
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-card);
     padding: 1.75rem;
     margin-bottom: 2.5rem;
     line-height: 1.75;
     font-size: 1.05rem;
-    color: var(--text-main);
+    color: var(--carbon);
     white-space: pre-wrap;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
   }
@@ -143,7 +144,7 @@ Duyuru Bulunamadı | 404
   /* Alerts */
   .alert {
     padding: 1rem 1.25rem;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-card);
     margin-bottom: 2rem;
     display: flex;
     align-items: center;
@@ -152,32 +153,34 @@ Duyuru Bulunamadı | 404
   }
 
   .alert-success {
-    background-color: #ecfdf5;
-    border: 1px solid #a7f3d0;
-    color: #065f46;
+    background-color: var(--success-bg);
+    border: 1px solid rgba(52, 199, 89, 0.3);
+    color: #1b632c;
   }
 
   .alert-error {
-    background-color: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #991b1b;
+    background-color: var(--error-bg);
+    border: 1px solid rgba(255, 59, 48, 0.3);
+    color: #a01a14;
   }
 
   .btn-sm {
-    padding: 0.5rem 1rem;
+    padding: 0.45rem 1rem;
     font-size: 0.875rem;
+    border-radius: var(--radius-pill);
   }
 
   .btn-danger {
-    background-color: #dc2626;
-    color: #ffffff;
-    border: 1px solid #dc2626;
+    background-color: var(--error);
+    color: #ffffff !important;
+    border: 1px solid var(--error);
+    border-radius: var(--radius-pill);
   }
 
   .btn-danger:hover {
-    background-color: #b91c1c;
+    background-color: #d70015;
     color: #ffffff;
-    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
+    box-shadow: 0 4px 10px rgba(255, 59, 48, 0.25);
   }
 
   @media (max-width: 768px) {
@@ -294,7 +297,7 @@ Duyuru Bulunamadı | 404
     {% else %}
     <div class="detail-card" style="text-align: center; padding: 3.5rem 1.5rem;">
       <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
-      <h3 style="font-size: 1.4rem; color: var(--primary); margin-bottom: 0.5rem;">Duyuru Bulunamadı</h3>
+      <h3 style="font-size: 1.4rem; color: var(--carbon); margin-bottom: 0.5rem;">Duyuru Bulunamadı</h3>
       <p style="color: var(--text-muted); margin-bottom: 2rem;">
         Aradığınız duyuru kaydı bulunamadı veya sistemden silinmiş olabilir.
       </p>
