@@ -29,27 +29,44 @@
 
       <!-- Desktop & Mobile Navigation Links -->
       <nav>
+        {% set current_user = (request.state.user if (request and request.state and request.state.user) else (current_user if current_user else None)) %}
         <ul class="nav-links" id="navLinks">
-          <li><a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">Ana Sayfa</a></li>
-          <li><a href="/users" class="nav-link {% if request.url.path.startswith('/users') %}active{% endif %}">Mezunlar</a></li>
-          <li><a href="/jobs" class="nav-link {% if request.url.path.startswith('/jobs') %}active{% endif %}">İş İlanları</a></li>
-          <li><a href="/applications" class="nav-link {% if request.url.path.startswith('/applications') %}active{% endif %}">Başvurular</a></li>
-          <li><a href="/announcements" class="nav-link {% if request.url.path.startswith('/announcements') %}active{% endif %}">Duyurular</a></li>
-          <li><a href="/about" class="nav-link {% if request.url.path == '/about' %}active{% endif %}">Hakkında</a></li>
-          {% if user %}
-            {% if user.role == 'admin' %}
-              <li><a href="/admin" class="nav-link {% if request.url.path.startswith('/admin') %}active{% endif %}" style="color: var(--apple-blue); font-weight: 600;">Yönetim</a></li>
+          {% if not current_user %}
+            {# --- 1. GUEST (UNAUTHENTICATED) --- #}
+            <li><a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">Ana Sayfa</a></li>
+            <li><a href="/login" class="nav-link {% if request.url.path == '/login' %}active{% endif %}">Giriş Yap</a></li>
+            <li><a href="/register" class="nav-link {% if request.url.path == '/register' %}active{% endif %}">Kayıt Ol</a></li>
+
+          {% else %}
+            {# --- 2. AUTHENTICATED USERS (COMMON + ROLE-SPECIFIC) --- #}
+            <li><a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">Ana Sayfa</a></li>
+            <li><a href="/dashboard" class="nav-link {% if request.url.path == '/dashboard' %}active{% endif %}">Profil</a></li>
+            <li><a href="/jobs" class="nav-link {% if request.url.path.startswith('/jobs') %}active{% endif %}">İş İlanları</a></li>
+            <li><a href="/announcements" class="nav-link {% if request.url.path == '/announcements' %}active{% endif %}">Duyurular</a></li>
+
+            {# Role-specific additional links #}
+            {% if current_user.role == 'academician' %}
+              <li><a href="/announcements" class="nav-link nav-link-academician" style="color: var(--apple-blue); font-weight: 600;">Duyuru Yönetimi</a></li>
+              <li><a href="/users" class="nav-link {% if request.url.path.startswith('/users') %}active{% endif %}">Mezunlar</a></li>
+            {% elif current_user.role == 'admin' %}
+              <li><a href="/admin" class="nav-link {% if request.url.path.startswith('/admin') %}active{% endif %}" style="color: var(--apple-blue); font-weight: 600;">Yönetim Paneli</a></li>
+              <li><a href="/applications" class="nav-link {% if request.url.path.startswith('/applications') %}active{% endif %}">Başvurular</a></li>
+              <li><a href="/users" class="nav-link {% if request.url.path.startswith('/users') %}active{% endif %}">Mezunlar</a></li>
+            {% elif current_user.role == 'student' %}
+              <li><a href="/applications" class="nav-link {% if request.url.path.startswith('/applications') %}active{% endif %}">Başvurularım</a></li>
+              <li><a href="/users" class="nav-link {% if request.url.path.startswith('/users') %}active{% endif %}">Mezun Rehberi</a></li>
+            {% elif current_user.role == 'alumnus' %}
+              <li><a href="/applications" class="nav-link {% if request.url.path.startswith('/applications') %}active{% endif %}">Başvurularım</a></li>
+              <li><a href="/users" class="nav-link {% if request.url.path.startswith('/users') %}active{% endif %}">Mezunlar</a></li>
             {% endif %}
-            <li><a href="/dashboard" class="nav-link {% if request.url.path == '/dashboard' %}active{% endif %}">Panelim</a></li>
+
+            {# Logout Form Button #}
             <li>
               <form action="/logout" method="POST" style="display: inline; margin: 0;">
-                <input type="hidden" name="csrf_token" value="{{ user.csrf_token or csrf_token }}">
+                <input type="hidden" name="csrf_token" value="{{ current_user.csrf_token or csrf_token or '' }}">
                 <button type="submit" class="nav-link nav-btn-logout" style="background: none; border: none; cursor: pointer; font: inherit; padding: 0.5rem 0.75rem; color: var(--error, #ff3b30);">Çıkış Yap</button>
               </form>
             </li>
-          {% else %}
-            <li><a href="/register" class="nav-link {% if request.url.path == '/register' %}active{% endif %}">Kayıt Ol</a></li>
-            <li><a href="/login" class="nav-link {% if request.url.path == '/login' %}active{% endif %}">Giriş Yap</a></li>
           {% endif %}
           <li><a href="/docs" target="_blank" rel="noopener noreferrer" class="nav-cta">API Docs &rarr;</a></li>
         </ul>
