@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}Mezun Paneli | {{ app_title_tr }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .dashboard-section {
+    padding: 3rem 1.5rem 5rem;
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+
+  .dashboard-hero {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-sm);
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+
+  .hero-info {
+    max-width: 650px;
+  }
+
+  .dashboard-badge {
+    display: inline-block;
+    padding: 0.35rem 0.9rem;
+    font-size: var(--font-size-caption-1);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--apple-blue);
+    background-color: rgba(0, 113, 227, 0.08);
+    border-radius: var(--radius-pill);
+    margin-bottom: 0.75rem;
+  }
+
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-large-title);
+    font-weight: 700;
+    color: var(--carbon);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: var(--font-size-body);
+    color: var(--graphite);
+    line-height: 1.5;
+  }
+
+  .user-role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 1rem;
+    font-size: var(--font-size-footnote);
+    font-weight: 600;
+    border-radius: var(--radius-pill);
+    background-color: rgba(52, 199, 89, 0.12);
+    color: #1b632c;
+    border: 1px solid rgba(52, 199, 89, 0.3);
+  }
+
+  .role-admin {
+    background-color: rgba(255, 59, 48, 0.12);
+    color: #a01a14;
+    border-color: rgba(255, 59, 48, 0.3);
+  }
+
+  /* Profile Details Grid */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .profile-stat-card {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-card);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .stat-label {
+    font-size: var(--font-size-caption-1);
+    font-weight: 600;
+    color: var(--mist);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.35rem;
+  }
+
+  .stat-value {
+    font-size: var(--font-size-headline);
+    font-weight: 700;
+    color: var(--carbon);
+  }
+
+  /* Quick Actions Section */
+  .section-heading {
+    font-family: var(--font-display);
+    font-size: var(--font-size-title-2);
+    font-weight: 700;
+    color: var(--carbon);
+    margin-bottom: 1.25rem;
+  }
+
+  .actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .action-card {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-card);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: var(--transition);
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--apple-blue);
+  }
+
+  .action-icon {
+    width: 44px;
+    height: 44px;
+    background-color: var(--ice);
+    color: var(--apple-blue);
+    border-radius: var(--radius-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .action-title {
+    font-size: var(--font-size-title-3);
+    font-weight: 700;
+    color: var(--carbon);
+    margin-bottom: 0.4rem;
+  }
+
+  .action-desc {
+    font-size: var(--font-size-footnote);
+    color: var(--graphite);
+    line-height: 1.45;
+    margin-bottom: 1.25rem;
+  }
+
+  .action-link {
+    font-size: var(--font-size-subhead);
+    font-weight: 600;
+    color: var(--apple-blue);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+  <!-- Hero Card -->
+  <div class="dashboard-hero">
+    <div class="hero-info">
+      <span class="dashboard-badge">Mezun Portalı</span>
+      <h1 class="hero-title">Hoş Geldiniz, {{ user.name }}</h1>
+      <p class="hero-subtitle">
+        İstanbul Üniversitesi mezunlar ailesi kontrol panelinizdesiniz. Profilinizi inceleyebilir, kariyer ilanlarını takip edebilir ve başvurularınızı yönetebilirsiniz.
+      </p>
+    </div>
+
+    <div>
+      <span class="user-role-badge {% if user.role == 'admin' %}role-admin{% endif %}">
+        {% if user.role == 'admin' %}
+          &bull; Sistem Yöneticisi
+        {% else %}
+          &bull; Kayıtlı Mezun ({{ user.role|capitalize }})
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
+  <!-- Profile Details Cards -->
+  <div class="profile-grid">
+    <div class="profile-stat-card">
+      <div class="stat-label">Bölüm / Program</div>
+      <div class="stat-value">{{ user.department or 'Belirtilmedi' }}</div>
+    </div>
+    <div class="profile-stat-card">
+      <div class="stat-label">Mezuniyet Yılı</div>
+      <div class="stat-value">{{ user.graduation_year or 'Belirtilmedi' }}</div>
+    </div>
+    <div class="profile-stat-card">
+      <div class="stat-label">Kayıtlı E-posta</div>
+      <div class="stat-value" style="font-size: var(--font-size-body); word-break: break-all;">{{ user.email }}</div>
+    </div>
+    <div class="profile-stat-card">
+      <div class="stat-label">Kullanıcı Numarası</div>
+      <div class="stat-value">#{{ user.user_id }}</div>
+    </div>
+  </div>
+
+  <!-- Quick Actions Grid -->
+  <h2 class="section-heading">Hızlı İşlemler</h2>
+  <div class="actions-grid">
+    <!-- Mezunlar Rehberi -->
+    <a href="/users" class="action-card">
+      <div>
+        <div class="action-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <h3 class="action-title">Mezun Rehberi</h3>
+        <p class="action-desc">
+          İstanbul Üniversitesi mezunlarını listeleyin, dönem arkadaşlarınızı ve çalışma alanlarını inceleyin.
+        </p>
+      </div>
+      <span class="action-link">Rehberi İncele &rarr;</span>
+    </a>
+
+    <!-- İş İlanları -->
+    <a href="/jobs" class="action-card">
+      <div>
+        <div class="action-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+          </svg>
+        </div>
+        <h3 class="action-title">Kariyer & İş İlanları</h3>
+        <p class="action-desc">
+          Mezunlarımıza özel açılan iş ve staj pozisyonlarını görüntüleyin, doğrudan başvuru yapın.
+        </p>
+      </div>
+      <span class="action-link">İlanlara Git &rarr;</span>
+    </a>
+
+    <!-- Başvurular -->
+    <a href="/applications" class="action-card">
+      <div>
+        <div class="action-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>
+        <h3 class="action-title">İş Başvuruları</h3>
+        <p class="action-desc">
+          İlanlara gönderilen başvurularınızı, değerlendirme süreçlerini ve durum bilgilerini takip edin.
+        </p>
+      </div>
+      <span class="action-link">Başvuruları Gör &rarr;</span>
+    </a>
+
+    <!-- Duyurular -->
+    <a href="/announcements" class="action-card">
+      <div>
+        <div class="action-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </div>
+        <h3 class="action-title">Duyurular</h3>
+        <p class="action-desc">
+          Üniversite etkinlikleri, mezun buluşmaları ve güncel akademik duyuruları okuyun.
+        </p>
+      </div>
+      <span class="action-link">Duyuruları Oku &rarr;</span>
+    </a>
+  </div>
+</section>
+{% endblock %}

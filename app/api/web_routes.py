@@ -4,14 +4,17 @@ import urllib.parse
 from pathlib import Path
 from typing import Any, Dict
 
-from fastapi import APIRouter, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.core.config import settings
+from app.core.csrf import generate_login_csrf_token
+from app.core.dependencies import get_current_user, get_current_user_optional, require_role
 from app.controllers.announcement_controller import AnnouncementController
 from app.controllers.user_controller import UserController
+from app.services.auth_service import AuthService
 from app.services.registration_service import RegistrationService
 
 web_router = APIRouter(tags=["Web Pages"])
@@ -995,7 +998,13 @@ async def api_register_user(request: Request):
 
 @web_router.get("/login", response_class=HTMLResponse)
 async def get_login_page(request: Request):
-    """Renders the informational login page clarifying Phase 3 roadmap status."""
+    """Renders the login page. Redirects to dashboard if already authenticated."""
+    current_user = get_current_user_optional(request)
+    if current_user:
+        return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+
+    notice = request.query_params.get("notice")
+    csrf_token = generate_login_csrf_token()
     return templates.TemplateResponse(
         request=request,
         name="login.html",
@@ -1004,6 +1013,171 @@ async def get_login_page(request: Request):
             "app_title_tr": settings.APP_TITLE_TR,
             "app_description": settings.APP_DESCRIPTION,
             "app_version": settings.APP_VERSION,
+            "form_data": {},
+            "csrf_token": csrf_token,
+            "error_message": None,
+            "notice_message": notice,
+            "user": None,
         },
         status_code=status.HTTP_200_OK,
     )
+
+
+@web_router.post("/login")
+async def post_login_page(request: Request):
+    """Handles login submissions from HTML form and JSON API."""
+    form_data = await _extract_form_data(request)
+    email = form_data.get("email", "")
+    password = form_data.get("password", "")
+
+    try:
+        session_token, user_data = AuthService.authenticate_user(email=email, password=password)
+
+        if _is_json_requested(request):
+            response = JSONResponse(
+                content={
+                    "status": "success",
+                    "message": "Giriş başarılı.",
+                    "data": user_data,
+                    "csrf_token": user_data.get("csrf_token"),
+                    "redirect_url": "/dashboard",
+                },
+                status_code=status.HTTP_200_OK,
+            )
+        else:
+            response = RedirectResponse(
+                url="/dashboard",
+                status_code=status.HTTP_303_SEE_OTHER,
+            )
+
+        # Set secure session cookie
+        response.set_cookie(
+            key=settings.SESSION_COOKIE_NAME,
+            value=session_token,
+            max_age=settings.SESSION_MAX_AGE,
+            httponly=True,
+            samesite="lax",
+            secure=settings.session_cookie_secure,
+            path="/",
+        )
+        return response
+
+    except ValueError as e:
+        err_msg = str(e)
+        if _is_json_requested(request):
+            return JSONResponse(
+                content={
+                    "status": "error",
+                    "message": err_msg,
+                },
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={
+                "app_name": settings.APP_NAME,
+                "app_title_tr": settings.APP_TITLE_TR,
+                "app_description": settings.APP_DESCRIPTION,
+                "app_version": settings.APP_VERSION,
+                "form_data": {"email": email},
+                "csrf_token": generate_login_csrf_token(),
+                "error_message": err_msg,
+                "notice_message": None,
+                "user": None,
+            },
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+@web_router.post("/api/login")
+async def api_login_user(request: Request):
+    """REST API endpoint for user authentication."""
+    form_data = await _extract_form_data(request)
+    email = form_data.get("email", "")
+    password = form_data.get("password", "")
+
+    try:
+        session_token, user_data = AuthService.authenticate_user(email=email, password=password)
+        response = JSONResponse(
+            content={
+                "status": "success",
+                "message": "Giriş başarılı.",
+                "data": user_data,
+                "csrf_token": user_data.get("csrf_token"),
+                "redirect_url": "/dashboard",
+            },
+            status_code=status.HTTP_200_OK,
+        )
+        response.set_cookie(
+            key=settings.SESSION_COOKIE_NAME,
+            value=session_token,
+            max_age=settings.SESSION_MAX_AGE,
+            httponly=True,
+            samesite="lax",
+            secure=settings.session_cookie_secure,
+            path="/",
+        )
+        return response
+    except ValueError as e:
+        return JSONResponse(
+            content={
+                "status": "error",
+                "message": str(e),
+            },
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+@web_router.get("/dashboard", response_class=HTMLResponse)
+async def get_dashboard_page(request: Request):
+    """Protected alumni dashboard view requiring active session."""
+    user = get_current_user_optional(request)
+    if not user:
+        if _is_json_requested(request):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Oturum açmanız gerekiyor.",
+            )
+        return RedirectResponse(
+            url="/login?notice=Panelinize+erişmek+için+lütfen+giriş+yapın.",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard.html",
+        context={
+            "app_name": settings.APP_NAME,
+            "app_title_tr": settings.APP_TITLE_TR,
+            "app_description": settings.APP_DESCRIPTION,
+            "app_version": settings.APP_VERSION,
+            "user": user,
+            "csrf_token": user.get("csrf_token"),
+        },
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@web_router.get("/api/me")
+async def get_current_user_profile(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """Protected REST endpoint returning the authenticated user's profile."""
+    return {
+        "status": "success",
+        "user": current_user,
+    }
+
+
+@web_router.get("/api/admin/overview")
+async def get_admin_overview(
+    admin_user: Dict[str, Any] = Depends(require_role("admin")),
+):
+    """Protected role-guarded endpoint accessible only to administrators."""
+    return {
+        "status": "success",
+        "message": "Admin paneline hoş geldiniz.",
+        "admin": admin_user,
+    }

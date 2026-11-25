@@ -39,6 +39,12 @@
     margin-bottom: 0.75rem;
   }
 
+  .login-subtitle {
+    font-size: var(--font-size-body);
+    color: var(--graphite);
+    line-height: 1.5;
+  }
+
   .login-card {
     background: #ffffff;
     border: 1px solid var(--border-subtle);
@@ -46,37 +52,102 @@
     box-shadow: var(--shadow-sm);
     padding: 2.5rem;
     width: 100%;
-    max-width: 480px;
+    max-width: 460px;
     box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
   }
 
-  .roadmap-alert {
-    background-color: var(--ice);
-    border: 1px solid rgba(0, 113, 227, 0.2);
-    border-radius: var(--radius-card);
-    padding: 1.25rem;
-    color: var(--carbon);
+  @media (max-width: 500px) {
+    .login-card {
+      padding: 1.75rem 1.25rem;
+    }
+  }
+
+  .form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .form-group label {
     font-size: var(--font-size-footnote);
-    line-height: 1.5;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .roadmap-alert-title {
-    font-weight: 700;
-    color: var(--apple-blue);
+    font-weight: 600;
+    color: var(--carbon);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: var(--font-size-subhead);
+    justify-content: space-between;
   }
 
-  .form-group-dummy {
-    opacity: 0.65;
+  .form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-input);
+    font-family: inherit;
+    font-size: var(--font-size-subhead);
+    color: var(--carbon);
+    background-color: #ffffff;
+    transition: var(--transition);
+    box-sizing: border-box;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--apple-blue);
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.18);
+  }
+
+  .form-input.is-invalid {
+    border-color: var(--error);
+    box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.15);
+  }
+
+  .field-error {
+    font-size: var(--font-size-caption-2);
+    color: var(--error);
+    display: none;
+  }
+
+  .field-error.visible {
+    display: block;
+  }
+
+  .login-actions {
+    margin-top: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .btn-block {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.85rem 1.5rem;
+    font-size: var(--font-size-subhead);
+    font-weight: 600;
+  }
+
+  .register-redirect {
+    text-align: center;
+    font-size: var(--font-size-footnote);
+    color: var(--graphite);
+  }
+
+  .register-redirect a {
+    color: var(--apple-blue);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .register-redirect a:hover {
+    text-decoration: underline;
   }
 </style>
 {% endblock %}
@@ -84,51 +155,123 @@
 {% block content %}
 <section class="login-section">
   <div class="login-header">
-    <span class="login-badge">Kullanıcı Girişi</span>
-    <h1 class="login-title">Mezun Portalı</h1>
-    <p style="color: var(--graphite); font-size: var(--font-size-body); line-height: 1.5;">
-      İstanbul Üniversitesi Mezun Takip Sistemi kimlik doğrulama kapısı.
+    <span class="login-badge">İstanbul Üniversitesi Mezun Portalı</span>
+    <h1 class="login-title">Tekrar Hoş Geldiniz</h1>
+    <p class="login-subtitle">
+      Mezun ağımıza erişmek, iş ilanlarını incelemek ve profilinizi yönetmek için hesabınıza giriş yapın.
     </p>
   </div>
 
   <div class="login-card">
-    <div class="roadmap-alert">
-      <div class="roadmap-alert-title">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="16" x2="12" y2="12"></line>
-          <line x1="12" y1="8" x2="12.01" y2="8"></line>
-        </svg>
-        Aşama 3 Geliştirme Bildirimi
-      </div>
-      <div>
-        Sistem yol haritamız doğrultusunda, <strong>JWT tabanlı güvenli oturum açma ve giriş (login)</strong> mekanizmaları <strong>Aşama 3</strong> kapsamında geliştirilmektedir.
-      </div>
-      <div style="color: var(--ash); font-size: var(--font-size-caption-1);">
-        Kayıt işlemini tamamladıysanız kullanıcı hesabınız PostgreSQL veri tabanına ve mezun rehberine kaydedilmiştir.
-      </div>
+    {% if error_message %}
+    <div class="alert alert-error" role="alert">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span>{{ error_message }}</span>
     </div>
+    {% endif %}
 
-    <!-- Informational Disabled Form Placeholder -->
-    <div style="display: flex; flex-direction: column; gap: 1rem;" class="form-group-dummy">
-      <div class="form-group">
-        <label for="dummy_email" style="font-size: var(--font-size-footnote); font-weight: 600; color: var(--carbon);">E-posta</label>
-        <input type="email" id="dummy_email" class="form-input" placeholder="ornek@alumni.istanbul.edu.tr" disabled>
-      </div>
-      <div class="form-group">
-        <label for="dummy_pwd" style="font-size: var(--font-size-footnote); font-weight: 600; color: var(--carbon);">Şifre</label>
-        <input type="password" id="dummy_pwd" class="form-input" placeholder="••••••••" disabled>
-      </div>
+    {% if notice_message %}
+    <div class="alert" style="background-color: var(--ice); border: 1px solid rgba(41, 151, 255, 0.25); color: var(--link-blue);" role="alert">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg>
+      <span>{{ notice_message }}</span>
     </div>
+    {% endif %}
 
-    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
-      <a href="/register" class="btn btn-primary btn-pill" style="display: flex; justify-content: center; align-items: center; padding: 0.75rem 1.5rem; text-decoration: none;">
-        Yeni Mezun Kaydı Oluştur &rarr;
-      </a>
-      <a href="/" class="btn btn-secondary btn-pill" style="display: flex; justify-content: center; align-items: center; padding: 0.75rem 1.5rem; text-decoration: none;">
-        Ana Sayfaya Dön
-      </a>
-    </div>
+    <form action="/login" method="POST" id="loginForm" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-grid">
+        <!-- Email Address -->
+        <div class="form-group">
+          <label for="email">E-posta Adresi</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="form-input"
+            value="{{ form_data.email if form_data else '' }}"
+            placeholder="ornek@alumni.istanbul.edu.tr"
+            autocomplete="email"
+            required
+          >
+          <span class="field-error" id="emailError">Lütfen geçerli bir e-posta adresi giriniz.</span>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="password">Şifre</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="form-input"
+            placeholder="Şifreniz"
+            autocomplete="current-password"
+            required
+          >
+          <span class="field-error" id="passwordError">Lütfen şifrenizi giriniz.</span>
+        </div>
+      </div>
+
+      <div class="login-actions">
+        <button type="submit" class="btn btn-primary btn-pill btn-block" id="loginBtn">
+          Giriş Yap
+        </button>
+        <div class="register-redirect">
+          Henüz bir hesabınız yok mu? <a href="/register">Kayıt Olun</a>
+        </div>
+      </div>
+    </form>
   </div>
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (function() {
+    const form = document.getElementById('loginForm');
+    if (!form) return;
+
+    const emailInput = document.getElementById('email');
+    const pwdInput = document.getElementById('password');
+    const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+
+    function setFieldValidity(input, errorElementId, isValid) {
+      const err = document.getElementById(errorElementId);
+      if (!isValid) {
+        input.classList.add('is-invalid');
+        if (err) err.classList.add('visible');
+      } else {
+        input.classList.remove('is-invalid');
+        if (err) err.classList.remove('visible');
+      }
+      return isValid;
+    }
+
+    form.addEventListener('submit', function(e) {
+      let isFormValid = true;
+
+      const emailVal = emailInput.value.trim();
+      if (!setFieldValidity(emailInput, 'emailError', emailRegex.test(emailVal))) {
+        isFormValid = false;
+      }
+
+      const pwdVal = pwdInput.value;
+      if (!setFieldValidity(pwdInput, 'passwordError', pwdVal.length > 0)) {
+        isFormValid = false;
+      }
+
+      if (!isFormValid) {
+        e.preventDefault();
+      }
+    });
+  })();
+</script>
 {% endblock %}

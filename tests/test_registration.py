@@ -133,11 +133,11 @@ class TestRegistration(unittest.TestCase):
         self.assertIn("Aramıza Katılın", body)
 
     def test_get_login_page(self):
-        """GET /login should return HTTP 200 explaining Phase 3 roadmap status."""
+        """GET /login should return HTTP 200 with login form."""
         status_code, headers, body = self._run_request("GET", "/login")
         self.assertEqual(status_code, 200)
         self.assertIn("text/html", headers.get("content-type", ""))
-        self.assertIn("Aşama 3", body)
+        self.assertIn('name="email"', body)
         self.assertIn("/register", body)
 
     def test_successful_registration_html(self):

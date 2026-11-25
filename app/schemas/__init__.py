@@ -33,6 +33,10 @@ from app.schemas.auth_schemas import (
     UserRegisterResponseData,
     UserRegisterApiResponse,
 )
+from app.schemas.login_schemas import (
+    UserLoginRequest,
+    UserLoginApiResponse,
+)
 
 __all__ = [
     "AnnouncementCreateRequest",
@@ -61,4 +65,6 @@ __all__ = [
     "UserRegisterRequest",
     "UserRegisterResponseData",
     "UserRegisterApiResponse",
+    "UserLoginRequest",
+    "UserLoginApiResponse",
 ]
