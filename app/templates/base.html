@@ -38,6 +38,12 @@
           <li><a href="/about" class="nav-link {% if request.url.path == '/about' %}active{% endif %}">Hakkında</a></li>
           {% if user %}
             <li><a href="/dashboard" class="nav-link {% if request.url.path == '/dashboard' %}active{% endif %}">Panelim</a></li>
+            <li>
+              <form action="/logout" method="POST" style="display: inline; margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ user.csrf_token or csrf_token }}">
+                <button type="submit" class="nav-link nav-btn-logout" style="background: none; border: none; cursor: pointer; font: inherit; padding: 0.5rem 0.75rem; color: var(--error, #ff3b30);">Çıkış Yap</button>
+              </form>
+            </li>
           {% else %}
             <li><a href="/register" class="nav-link {% if request.url.path == '/register' %}active{% endif %}">Kayıt Ol</a></li>
             <li><a href="/login" class="nav-link {% if request.url.path == '/login' %}active{% endif %}">Giriş Yap</a></li>

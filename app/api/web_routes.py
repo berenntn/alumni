@@ -16,6 +16,7 @@ from app.controllers.announcement_controller import AnnouncementController
 from app.controllers.user_controller import UserController
 from app.services.auth_service import AuthService
 from app.services.registration_service import RegistrationService
+from app.services.session_service import SessionService
 
 web_router = APIRouter(tags=["Web Pages"])
 
@@ -1181,3 +1182,69 @@ async def get_admin_overview(
         "message": "Admin paneline hoş geldiniz.",
         "admin": admin_user,
     }
+
+
+@web_router.post("/logout")
+async def post_logout(request: Request):
+    """Logs out authenticated user, invalidates session, clears cookie, and redirects."""
+    session_token = request.cookies.get(settings.SESSION_COOKIE_NAME)
+    if session_token:
+        SessionService.delete_session(session_token)
+
+    if _is_json_requested(request):
+        response = JSONResponse(
+            content={
+                "status": "success",
+                "message": "Oturum başarıyla kapatıldı.",
+                "redirect_url": "/login",
+            },
+            status_code=status.HTTP_200_OK,
+        )
+    else:
+        response = RedirectResponse(
+            url="/login?notice=Oturumunuz+başarıyla+kapatıldı.",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    response.delete_cookie(
+        key=settings.SESSION_COOKIE_NAME,
+        path="/",
+        httponly=True,
+        samesite="lax",
+        secure=settings.session_cookie_secure,
+    )
+    return response
+
+
+@web_router.post("/api/logout")
+async def api_logout_user(request: Request):
+    """REST API endpoint for user logout and session invalidation."""
+    session_token = request.cookies.get(settings.SESSION_COOKIE_NAME)
+    if session_token:
+        SessionService.delete_session(session_token)
+
+    response = JSONResponse(
+        content={
+            "status": "success",
+            "message": "Oturum başarıyla kapatıldı.",
+            "redirect_url": "/login",
+        },
+        status_code=status.HTTP_200_OK,
+    )
+    response.delete_cookie(
+        key=settings.SESSION_COOKIE_NAME,
+        path="/",
+        httponly=True,
+        samesite="lax",
+        secure=settings.session_cookie_secure,
+    )
+    return response
+
+
+@web_router.get("/logout")
+async def get_logout_redirect(request: Request):
+    """Safe GET handler; prevents GET-based logout CSRF and redirects to dashboard or login."""
+    current_user = get_current_user_optional(request)
+    if current_user:
+        return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)

@@ -189,7 +189,7 @@
       </p>
     </div>
 
-    <div>
+    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;">
       <span class="user-role-badge {% if user.role == 'admin' %}role-admin{% endif %}">
         {% if user.role == 'admin' %}
           &bull; Sistem Yöneticisi
@@ -197,6 +197,12 @@
           &bull; Kayıtlı Mezun ({{ user.role|capitalize }})
         {% endif %}
       </span>
+      <form action="/logout" method="POST" id="dashboardLogoutForm" style="margin: 0;">
+        <input type="hidden" name="csrf_token" value="{{ user.csrf_token or csrf_token }}">
+        <button type="submit" class="btn btn-secondary btn-sm btn-pill" id="dashboardLogoutBtn" style="color: var(--error, #ff3b30); border-color: rgba(255, 59, 48, 0.3);">
+          Çıkış Yap
+        </button>
+      </form>
     </div>
   </div>
 
