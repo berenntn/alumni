@@ -11,9 +11,14 @@ from fastapi.templating import Jinja2Templates
 
 from app.core.config import settings
 from app.core.csrf import generate_login_csrf_token
+from app.core.database import get_db_session
 from app.core.dependencies import get_current_user, get_current_user_optional, require_role
 from app.controllers.announcement_controller import AnnouncementController
 from app.controllers.user_controller import UserController
+from app.models.announcement import AnnouncementDB
+from app.models.application import ApplicationDB
+from app.models.job_posting import JobPostingDB
+from app.services.admin_service import AdminService
 from app.services.auth_service import AuthService
 from app.services.registration_service import RegistrationService
 from app.services.session_service import SessionService
@@ -1217,7 +1222,7 @@ async def api_login_user(request: Request):
 
 @web_router.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard_page(request: Request):
-    """Protected alumni dashboard view requiring active session."""
+    """Protected user dashboard view requiring active session with role-specific experiences."""
     user = get_current_user_optional(request)
     if not user:
         if _is_json_requested(request):
@@ -1230,6 +1235,110 @@ async def get_dashboard_page(request: Request):
             status_code=status.HTTP_303_SEE_OTHER,
         )
 
+    user_id = user.get("user_id")
+    role = user.get("role", "alumnus")
+
+    # Safe sanitized profile data (preventing leak of password hashes or session secrets)
+    profile_data = {
+        "user_id": user_id,
+        "name": user.get("name"),
+        "email": user.get("email"),
+        "role": role,
+        "department": user.get("department") or "Belirtilmedi",
+        "graduation_year": user.get("graduation_year"),
+    }
+
+    recent_jobs = []
+    user_applications = []
+    recent_announcements = []
+    my_announcements = []
+    system_stats = {}
+
+    try:
+        with get_db_session() as db:
+            # 1. Latest announcements (relevant across roles)
+            announcement_records = (
+                db.query(AnnouncementDB)
+                .order_by(AnnouncementDB.id.desc())
+                .limit(4)
+                .all()
+            )
+            recent_announcements = [
+                {
+                    "id": a.id,
+                    "title": a.title,
+                    "content": a.content,
+                    "created_by": a.created_by,
+                }
+                for a in announcement_records
+            ]
+
+            # 2. Role-specific information queries
+            if role in ("alumnus", "student"):
+                # Job opportunities
+                job_records = (
+                    db.query(JobPostingDB)
+                    .order_by(JobPostingDB.id.desc())
+                    .limit(4)
+                    .all()
+                )
+                recent_jobs = [
+                    {
+                        "id": j.id,
+                        "title": j.title,
+                        "company_name": j.company_name,
+                        "location": j.location or "Belirtilmedi",
+                        "employment_type": j.employment_type or "Tam Zamanlı",
+                        "description": j.description or "",
+                    }
+                    for j in job_records
+                ]
+
+                # Application history
+                app_records = (
+                    db.query(ApplicationDB, JobPostingDB)
+                    .join(JobPostingDB, ApplicationDB.job_posting_id == JobPostingDB.id)
+                    .filter(ApplicationDB.user_id == user_id)
+                    .order_by(ApplicationDB.id.desc())
+                    .limit(5)
+                    .all()
+                )
+                user_applications = [
+                    {
+                        "id": app.id,
+                        "status": app.status,
+                        "created_at": app.created_at,
+                        "job_id": job.id,
+                        "job_title": job.title,
+                        "company_name": job.company_name,
+                    }
+                    for app, job in app_records
+                ]
+
+            elif role == "academician":
+                # Announcements authored by this academician
+                my_ann_records = (
+                    db.query(AnnouncementDB)
+                    .filter(AnnouncementDB.created_by == user_id)
+                    .order_by(AnnouncementDB.id.desc())
+                    .all()
+                )
+                my_announcements = [
+                    {
+                        "id": a.id,
+                        "title": a.title,
+                        "content": a.content,
+                    }
+                    for a in my_ann_records
+                ]
+
+            elif role == "admin":
+                # System statistics aggregated from PostgreSQL
+                system_stats = AdminService.get_system_stats()
+
+    except Exception:
+        pass
+
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
@@ -1239,7 +1348,13 @@ async def get_dashboard_page(request: Request):
             "app_description": settings.APP_DESCRIPTION,
             "app_version": settings.APP_VERSION,
             "user": user,
+            "profile": profile_data,
             "csrf_token": user.get("csrf_token"),
+            "recent_jobs": recent_jobs,
+            "user_applications": user_applications,
+            "recent_announcements": recent_announcements,
+            "my_announcements": my_announcements,
+            "system_stats": system_stats,
         },
         status_code=status.HTTP_200_OK,
     )

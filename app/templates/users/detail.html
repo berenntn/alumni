@@ -255,17 +255,21 @@ Kullanıcı Bulunamadı | 404
           &larr; Listeye Dön
         </a>
 
+        {% set viewer = request.state.user if (request and request.state and request.state.user) else None %}
+        {% if viewer and (viewer.user_id == user.id or viewer.role == 'admin') %}
         <div class="actions-right">
           <a href="/users/{{ user.id }}/edit" class="btn btn-primary">
             ✏️ Düzenle
           </a>
 
           <form action="/users/{{ user.id }}/delete" method="POST" style="margin: 0;">
+            <input type="hidden" name="csrf_token" value="{{ viewer.csrf_token or csrf_token or '' }}">
             <button type="submit" class="btn btn-danger">
               🗑️ Sil
             </button>
           </form>
         </div>
+        {% endif %}
       </div>
     </div>
     {% else %}

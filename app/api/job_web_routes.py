@@ -1,6 +1,4 @@
-"""Web pages for job postings."""
-
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 
@@ -161,7 +159,7 @@ from app.models.user_db import UserDB
 
 @router.get("/applications")
 def list_applications_page(request: Request):
-    """Display job applications with job and applicant details (Admin restricted)."""
+    """Display job applications (all applications for Admin, own applications for Alumnus/Student)."""
     current_user = getattr(request.state, "user", None)
     if not current_user:
         raise HTTPException(
@@ -169,14 +167,11 @@ def list_applications_page(request: Request):
             detail="Oturum açmanız gerekiyor.",
         )
 
-    if current_user.get("role") != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bu sayfayı görüntülemek için yönetici yetkisi gereklidir.",
-        )
+    user_role = current_user.get("role")
+    user_id = current_user.get("user_id")
 
     with get_db_session() as session:
-        rows = session.execute(
+        query = (
             select(ApplicationDB, JobPostingDB, UserDB)
             .join(
                 JobPostingDB,
@@ -186,7 +181,12 @@ def list_applications_page(request: Request):
                 UserDB,
                 ApplicationDB.user_id == UserDB.id,
             )
-            .order_by(ApplicationDB.id.desc())
+        )
+        if user_role != "admin":
+            query = query.where(ApplicationDB.user_id == user_id)
+
+        rows = session.execute(
+            query.order_by(ApplicationDB.id.desc())
         ).all()
 
         application_data = [

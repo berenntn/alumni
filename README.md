@@ -24,9 +24,10 @@ Bu ilk aşamada; FastAPI tabanlı modern, özgün ve responsive bir açılış s
 8. [Veri Tasarımı Dokümantasyonu (add.md)](#-veri-tasarımı-dokümantasyonu-addmd)
 9. [Project Directory Structure](#-project-directory-structure)
 10. [Uç Noktalar (Endpoints) & Swagger UI](#-uç-noktalar-endpoints--swagger-ui)
-11. [Yerel Kurulum ve Çalıştırma](#-yerel-kurulum-ve-çalıştırma)
-12. [Docker ve Docker Compose ile Çalıştırma](#-docker-ve-docker-compose-ile-çalıştırma)
-13. [Gelecek Aşamalar (Roadmap)](#-gelecek-aşamalar-roadmap)
+11. [Kimlik Doğrulama ve Güvenlik Mimarisi (Authentication & Security)](#-kimlik-doğrulama-ve-güvenlik-mimarisi-authentication--security)
+12. [Yerel Kurulum ve Çalıştırma](#-yerel-kurulum-ve-çalıştırma)
+13. [Docker ve Docker Compose ile Çalıştırma](#-docker-ve-docker-compose-ile-çalıştırma)
+14. [Gelecek Aşamalar (Roadmap)](#-gelecek-aşamalar-roadmap)
 
 ---
 
@@ -496,6 +497,227 @@ OpenAPI dokümantasyonunda uç noktalar mantıksal gruplara ayrılmıştır:
 
 ---
 
+## 🔐 Kimlik Doğrulama ve Güvenlik Mimarisi (Authentication & Security)
+
+İstanbul Üniversitesi Mezun Takip Sistemi, modern web güvenliği standartlarına ve OWASP ilkelerine tam uyumlu, kurumsal seviyede bir kimlik doğrulama ve yetkilendirme mimarisine sahiptir.
+
+> [!IMPORTANT]
+> **Mimari Güvenlik Standardı:**
+> Bu sistem; **sunucu taraflı kriptografik imzalı oturumlar (signed server-side sessions)** ve **PostgreSQL veritabanı rol senkronizasyonu** kullanmaktadır. Sistem **OAuth2** veya **stateless JWT değildir**. Oturum anahtarları `token:signature` formatında HMAC-SHA256 ile imzalanır ve gelen her istekte veritabanındaki güncel kullanıcı rolleri ile anlık olarak doğrulanır.
+
+```
+[ Tarayıcı / İstemci ]
+        │  Cookie: alumni_session=<token:signature> (veya Auth: Bearer)
+        ▼
+[ CSRFMiddleware ] ──▶ Origin & Referer doğrulaması, Synchronizer Token kontrolü
+        │
+        ▼
+[ AuthenticationMiddleware ]
+        ├── 1. Oturum İmza & Süre Doğrulaması (SessionService)
+        ├── 2. PostgreSQL UserDB ile Anlık Rol Senkronizasyonu (Stale Role Önleme)
+        ├── 3. request.state.user = {user_id, role, name, email, ...} Bağlama
+        └── 4. Rota İzin Kontrolü (Genel GET açık, Özel GET ve Write istekleri korumalı)
+        │
+        ▼
+[ API / View Controllers & Templates ] (Dinamik gezinme, profil & role özel sayfalar)
+```
+
+---
+
+### 1. Desteklenen Kullanıcı Rolleri (Supported User Roles)
+
+Sistemde 4 temel kullanıcı rolü tanımlanmıştır. Yetkiler ve sayfa içerikleri rol bazında tam yalıtılmıştır:
+
+| Rol | Rol Kodu | Tanım & Kapsam | İzin Verilen İşlemler & Erişim Sınırları |
+| :--- | :--- | :--- | :--- |
+| **Sistem Yöneticisi** | `admin` | Platformun tam yetkili yöneticisi | Tüm kullanıcıları görüntüleme, arama, filtreleme, rol atama/değiştirme, ilan yönetimi, tüm aday başvurularını onaylama/reddetme, duyuru yönetimi ve `/admin` paneline tam erişim. Kendi hesabını silmeye ve son yöneticiyi silme/yetkisini almaya karşı korumalıdır. |
+| **Akademisyen** | `academician` | Öğretim üyesi / görevlisi | Kendi duyurularını yayınlama, düzenleme ve silme; duyuru yönetimi kısayolları; mezun rehberini inceleme; kariyer ilanlarını takip etme. Başvuru yapamaz veya admin paneline erişemez. |
+| **Mezun** | `alumnus` | Üniversite mezunu | Kendi profilini görüntüleme ve düzenleme, kariyer ilanlarını inceleme, ilanlara doğrudan başvuru yapma, başvuru geçmişini takip etme (`/applications`), üniversite duyurularını okuma, mezunlar rehberinde listelenme. |
+| **Öğrenci** | `student` | Üniversitede aktif öğrenci | Kendi profilini ve akademik durumunu görüntüleme/düzenleme, staj ve iş ilanlarını inceleme, başvuru yapma ve durumunu takip etme (`/applications`), kampüs duyurularını okuma, mezun rehberini inceleme. |
+
+---
+
+### 2. Kayıt Süreci (Registration Process)
+
+Kullanıcı kaydı web arayüzü (`/register`) veya REST API (`POST /api/register`) üzerinden gerçekleştirilebilir:
+- **Doğrulama Kuralları:** Ad Soyad (min 2 karakter), geçerli e-posta formatı, bölüm/fakülte, mezuniyet yılı ve parola karmaşıklığı denetlenir.
+- **Parola Karmaşıklık Standartları:** Parolanın en az 8 karakter uzunluğunda olması; en az bir büyük harf (`A-Z`), bir küçük harf (`a-z`), bir rakam (`0-9`) ve bir özel karakter (`!@#$%^&*...`) içermesi zorunludur.
+- **Varsayılan Rol Ataması:** Açık kayıt formu üzerinden kaydolan her hesap varsayılan olarak `alumnus` rolünü alır. Güvenlik gereği harici kayıt formu üzerinden yönetici (`admin`) veya akademisyen (`academician`) hesabı oluşturulamaz.
+
+---
+
+### 3. Giriş ve Çıkış İşlemleri (Login and Logout Endpoints)
+
+- **Giriş (Login):**
+  - Web Arayüzü: `GET /login`, `POST /login` (URL-encoded form, CSRF token zorunlu)
+  - REST API: `POST /api/login` (JSON payload)
+  - Parola doğrulamasında sabit zamanlı karşılaştırma kullanılır (zamanlama saldırılarına karşı korumalı).
+  - Başarılı girişte istemciye güvenli `alumni_session` oturum çerezi atanır ve tarayıcı `/dashboard` sayfasına yönlendirilir (HTTP 303).
+- **Çıkış (Logout):**
+  - Web Arayüzü: `POST /logout` (CSRF korumalı form butonu)
+  - REST API: `POST /api/logout`
+  - Sunucu tarafındaki oturum kaydı (`SessionService`) anında silinerek geçersiz kılınır.
+  - İstemcideki oturum çerezi `Max-Age=0` ve `Expires=Thu, 01 Jan 1970 00:00:00 GMT` bayraklarıyla anında ve güvenle temizlenir. Kullanıcı ana sayfaya (`/`) yönlendirilir.
+
+---
+
+### 4. Oturum Yönetimi ve Çerez Güvenliği (Session Management & Cookie Security)
+
+Oturumlar `app/services/session_service.py` üzerinden yönetilir:
+- **Kriptografik İmza:** Oturum belirteçleri `token:signature` formatındadır. İmza, sunucu tarafında tutulan `SECRET_KEY` kullanılarak HMAC-SHA256 ile hesaplanır. İstemci tarafında değiştirilmiş, süresi dolmuş veya sahte imzalı belirteçler anında reddedilir.
+- **Güvenli Çerez Ayarları:**
+  - `HttpOnly=True`: JavaScript'in `document.cookie` üzerinden oturum çerezine erişmesini engeller (XSS hırsızlığına karşı tam koruma).
+  - `SameSite=Lax`: Siteler arası isteklerde çerezin yetkisiz gönderimini engeller (CSRF savunması).
+  - `Secure`: Canlı ortamda (`ENVIRONMENT=production`) çerezin sadece HTTPS üzerinden iletilmesini sağlar.
+  - `Path=/`: Çerezin tüm uygulama rotalarında geçerli olmasını sağlar.
+  - `Max-Age=86400`: Varsayılan oturum ömrü 24 saattir (`SESSION_EXPIRE_SECONDS`).
+- **Veritabanı Destekli Rol Senkronizasyonu:** Her istekte `AuthenticationMiddleware`, PostgreSQL `UserDB` tablosundan kullanıcının en güncel rol ve durumunu çeker. Kullanıcı silinmişse oturum anında feshedilir; rolü değiştirilmişse oturum anında güncellenir. İstemci taraflı rol manipülasyonu kesinlikle imkansızdır.
+
+---
+
+### 5. Parola Karma Yaklaşımı (Password Hashing)
+
+- Sistemde parolalar asla düz metin (plaintext) olarak tutulmaz, günlüklere yazdırılmaz veya API yanıtlarında döndürülmez.
+- `app/core/security.py` içerisinde `passlib.context.CryptContext` kullanılarak `pbkdf2_sha256` algoritması ile güçlü ve benzersiz rastgele tuzlar (salt) eşliğinde karma üretilir.
+- Parola doğrulaması `verify_password` fonksiyonuyla sabit zamanlı olarak yürütülür.
+
+---
+
+### 6. Merkezi Kimlik Doğrulama Ara Yazılımı (Authentication Middleware)
+
+`app/core/auth_middleware.py` dosyasında bulunan `AuthenticationMiddleware`, gelen her HTTP isteğinde çalışır:
+1. **İstek Başlatma:** `request.state.user = None` olarak başlatılır.
+2. **Kimlik Tespiti:** Çerezdeki `alumni_session` veya `Authorization: Bearer <token>` başlığı çözümlenir. İmzası doğrulanmış oturumun bilgileri PostgreSQL'den tazelenerek `request.state.user` nesnesine bağlanır.
+3. **Merkezi Rota Koruma İlkeleri:**
+   - **Genel Okuma Rotaları (Public GET):** `/`, `/about`, `/jobs`, `/announcements`, `/users` ve statik dosyalar kimlik doğrulamasız görüntülenebilir.
+   - **Özel Okuma Rotaları (Protected GET):** `/dashboard`, `/admin`, `/applications`, `/users/{id}/edit`, `/announcements/{id}/edit` rotaları geçerli oturum zorunludur.
+   - **Durum Değiştiren Yazma İşlemleri (State-Changing Write):** `/login`, `/register`, `/logout` hariç tüm `POST`, `PUT`, `PATCH`, `DELETE` işlemleri kimlik doğrulaması gerektirir.
+4. **Yanıt Tipi Uyumu:**
+   - Web tarayıcı isteklerinde: Oturumu olmayan kullanıcı HTTP 303 ile `/login?notice=...` adresine yönlendirilir.
+   - API isteklerinde (`/api/*` veya `Accept: application/json`): HTTP 401 JSON (`{"status": "error", "detail": "Oturum açmanız gerekiyor."}`) yanıtı verilir.
+
+---
+
+### 7. Rol Tabanlı Yetkilendirme (RBAC) & Kaynak Sahipliği
+
+- **Bildirimsel Rota Muhafazaları:** FastAPI bağımlılıkları (`Depends(require_role("admin"))` veya `Depends(require_role(["academician", "admin"]))`) ile hassas endpoint'ler korunur.
+- **Kaynak Sahipliği Güvenceleri:**
+  - Kullanıcı Profil Düzenleme (`_check_web_user_permission`): Bir kullanıcı yalnızca kendi profilini düzenleyebilir (`user_id == target_user_id`). Yalnızca sistem yöneticileri diğer profilleri düzenleyebilir veya silebilir.
+  - Duyuru Düzenleme (`_check_web_announcement_permission`): Akademisyenler yalnızca kendilerinin oluşturduğu duyuruları güncelleyebilir veya silebilir (`created_by == user_id`).
+  - İş Başvuruları (`/applications`): Öğrenciler ve mezunlar yalnızca kendi başvuru kayıtlarını görebilir; yöneticiler tüm başvuruları inceleyebilir.
+
+---
+
+### 8. Siteler Arası İstek Sahteciliği Savunması (CSRF Protection)
+
+`app/core/csrf_middleware.py` ve `app/core/csrf.py` ile çok katmanlı CSRF savunması uygulanmıştır:
+- **Senkronizör Belirteç Deseni (Synchronizer Token Pattern):** Her kullanıcı oturumuna özel, tahmin edilemez bir `csrf_token` üretilir.
+- **Form Koruması:** Web arayüzündeki tüm durum değiştiren HTML formları (`<input type="hidden" name="csrf_token" ...>`) bu belirteci içermek zorundadır.
+- **Origin ve Referer Doğrulaması:** Çerez kimlik doğrulamalı state-changing isteklerde istemcinin gönderdiği `Origin` ve `Referer` başlıkları sunucu alan adı ile uyuşmak zorundadır.
+- **API Ayrımı:** `Authorization: Bearer <token>` başlığı taşıyan API çağrıları CSRF denetiminden muaftır; çünkü web tarayıcıları üçüncü taraf sitelerden yapılan çapraz isteklerde bu başlığı otomatik olarak eklemez.
+
+---
+
+### 9. Dinamik ve Role Duyarlı Gezinme Menüsü (Dynamic Navigation)
+
+`app/templates/base.html` gezinme çubuğu, `request.state.user` nesnesine bağlı olarak anlık ve dinamik olarak değişir:
+
+| Menü Bağlantısı | Misafir (Guest) | Mezun (Alumnus) | Öğrenci (Student) | Akademisyen (Academician) | Yönetici (Admin) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Ana Sayfa (`/`)** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Giriş Yap (`/login`)** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Kayıt Ol (`/register`)** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Profil / Panel (`/dashboard`)** | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **Kariyer İlanları (`/jobs`)** | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **Duyurular (`/announcements`)** | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **Başvurularım (`/applications`)** | ❌ | ✅ | ✅ | ❌ | ✅ (*Başvurular*) |
+| **Mezunlar Rehberi (`/users`)** | ❌ | ✅ | ✅ (*Mezun Rehberi*) | ✅ | ✅ |
+| **Duyuru Yönetimi** | ❌ | ❌ | ❌ | ✅ | ❌ (*Admin Paneli*) |
+| **Yönetim Paneli (`/admin`)** | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Çıkış Yap (`/logout`)** | ❌ | ✅ | ✅ | ✅ | ✅ |
+
+Mobil hamburger menü toggle butonu ve Apple HIG arayüz tasarımı tüm ekran boyutlarında kusursuz çalışır.
+
+---
+
+### 10. Kullanıcı Rolüne Özel Sayfalar ve Deneyimler (Role-Specific Pages)
+
+Kullanıcı `/dashboard` paneline giriş yaptığında rolüne göre özelleştirilmiş bir kontrol merkezi ile karşılaşır:
+- **Mezun (`alumnus`):** Kişisel profil bilgileri (Bölüm, Mezuniyet Yılı), başvuru geçmişi (başvuru durumu rozetleri ile), öne çıkan iş fırsatları, güncel üniversite duyuruları ve profil düzenleme kısayolu.
+- **Öğrenci (`student`):** Kişisel ve akademik durum bilgileri (Bölüm, Öğrenci Statüsü), staj ve kariyer ilanları, başvuru geçmişi ve kampüs duyuruları.
+- **Akademisyen (`academician`):** Kişisel akademik profil, bizzat yayınladığı duyuruların listesi ve doğrudan düzenleme bağlantıları, yeni duyuru oluşturma kısayolu ve üniversite genel duyuruları.
+- **Yönetici (`admin`):** Yönetim paneline doğrudan geçiş afişi (`/admin`), gerçek zamanlı sistem istatistikleri (kullanıcı sayıları, ilanlar, başvurular, duyurular) ve yönetim kısayolları.
+- **Hassas Veri Gizliliği:** Parola karmaları, oturum gizli anahtarları veya dahili sistem sırları şablonlara veya yanıtlara asla aktarılmaz.
+- **Profil Ayrıcalıkları:** `/users/{id}` sayfasında "Düzenle" ve "Sil" aksiyon butonları yalnızca profil sahibine veya yöneticilere gösterilir.
+
+---
+
+### 11. Yönetim Paneli ve Güvenlik Muhafazaları (Admin Panel Safeguards)
+
+Yalnızca `admin` rolündeki kullanıcıların erişebildiği `/admin` paneli; gerçek zamanlı metrikler, kullanıcı yönetimi, iş ilanları, aday başvuruları ve duyuru yönetimini sunar.
+
+**Uygulanan Güvenlik Kalkanları:**
+- **Kendi Hesabını Silme Koruması (Self-Deletion Protection):** Oturumu açık olan yönetici, kendi kullanıcı hesabını silemez (`HTTP 400 Bad Request`).
+- **Son Yönetici Koruması (Last Admin Protection):** Sistemde tek bir yönetici kaldığında, bu yöneticinin silinmesi veya rolünün düşürülmesi engellenir.
+- **Hassas Veri Yalıtımı:** Parola karma değerleri ve oturum sırları yönetim şablonlarında veya bağlamlarında asla yer almaz.
+
+---
+
+### 12. İlk Yönetici Hesabı Kurulumu (Initial Admin Account Setup)
+
+Sistem kurulumunda ilk yönetici rolünün güvenli ve denetlenebilir bir şekilde atanması için `scripts/bootstrap_admin.py` aracı geliştirilmiştir.
+
+> [!NOTE]
+> Bu script **otomatik olarak yeni bir hesap oluşturmaz** veya parola üretmez. Önce yetkilendirilmek istenen kullanıcının web arayüzünden (`/register`) veya API'den normal bir şekilde kaydolması gerekir. Script, veritabanında **mevcut olan kayıtlı kullanıcıyı** `admin` rolüne terfi ettirir; kullanıcının parolasını veya kişisel bilgilerini asla değiştirmez.
+
+**Çalıştırma Komutu:**
+```bash
+python scripts/bootstrap_admin.py --email berentn05@gmail.com
+```
+
+**Güvenlik ve Davranış Özellikleri:**
+- **Güvenli & Tekrarlanabilir (Idempotent):** Birden fazla kez çalıştırıldığında hata vermez; kullanıcı zaten yönetici ise durumu bildirir.
+- **Kullanıcı Yoksa Güvenli Red:** Belirtilen e-posta veritabanında bulunamazsa işlem yapmaz ve önce `/register` üzerinden kayıt olunması gerektiğini bildirir.
+- **Parolayı ve Bilgileri Korur:** Kullanıcının mevcut karma parolasını ve kişisel bilgilerini kesinlikle değiştirmez.
+
+---
+
+### 13. Gerekli Ortam Değişkenleri (Environment Variables)
+
+Uygulamanın güvenli çalışması için `.env` dosyasında yapılandırılması gereken değişkenler:
+
+| Değişken | Örnek / Varsayılan Değer | Zorunlu mu? | Açıklama |
+| :--- | :--- | :---: | :--- |
+| `SECRET_KEY` | *(Rastgele en az 32 karakter)* | **Evet (Prod)** | Oturum imzaları ve CSRF token üretimi için kriptografik gizli anahtar. Asla repoya eklenmemelidir. |
+| `DATABASE_URL` | `postgresql://alumni_user:alumni_password@localhost:5432/alumni_db` | **Evet** | PostgreSQL veritabanı bağlantı adresi. Testlerde in-memory SQLite kullanılabilir. |
+| `ENVIRONMENT` | `development` / `production` | Hayır | `production` modunda `Secure` (HTTPS) çerez bayrağı aktif hale gelir. |
+| `SESSION_COOKIE_NAME` | `alumni_session` | Hayır | Oturum çerezi adı. |
+| `SESSION_EXPIRE_SECONDS` | `86400` | Hayır | Oturum geçerlilik süresi (varsayılan 24 saat). |
+
+---
+
+### 14. Kimlik Doğrulama İlgili Uç Noktalar Tablosu
+
+| Metot | Yol (Path) | Erişim Düzeyi | Sorumlu Modül | Açıklama |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/register` | Herkese Açık | `web_routes.py` | Web kullanıcı kayıt formu |
+| `POST` | `/register` | Herkese Açık | `web_routes.py` | Kayıt formu gönderimi (CSRF korumalı) |
+| `POST` | `/api/register` | Herkese Açık | `web_routes.py` | REST API JSON kullanıcı kaydı |
+| `GET` | `/login` | Herkese Açık | `web_routes.py` | Web kullanıcı giriş sayfası |
+| `POST` | `/login` | Herkese Açık | `web_routes.py` | Giriş formu gönderimi (CSRF korumalı) |
+| `POST` | `/api/login` | Herkese Açık | `web_routes.py` | REST API JSON kimlik doğrulama |
+| `POST` | `/logout` | Oturum Sahibi | `web_routes.py` | Web çıkış işlemi (CSRF korumalı form) |
+| `POST` | `/api/logout` | Oturum Sahibi | `web_routes.py` | REST API oturum kapatma |
+| `GET` | `/dashboard` | Oturum Sahibi | `web_routes.py` | Rol bazlı kişiselleştirilmiş kullanıcı paneli |
+| `GET` | `/api/me` | Oturum Sahibi | `web_routes.py` | Oturumu açık kullanıcının profil bilgisi |
+| `GET` | `/applications` | Oturum Sahibi | `job_web_routes.py` | Kullanıcının kendi başvuruları (veya Admin için tümü) |
+| `GET` | `/admin` | Yalnızca Admin | `admin_routes.py` | Yönetici paneli ana sayfası |
+| `GET` | `/admin/users` | Yalnızca Admin | `admin_routes.py` | Kullanıcı ve rol yönetimi |
+| `POST` | `/admin/users/{id}/role` | Yalnızca Admin | `admin_routes.py` | Kullanıcı rolü değiştirme |
+| `POST` | `/admin/users/{id}/delete`| Yalnızca Admin | `admin_routes.py` | Kullanıcı silme (Korumalı) |
+
+---
+
 ## 💻 Yerel Kurulum ve Çalıştırma
 
 ### 1. Gereksinimler
@@ -567,9 +789,9 @@ docker compose down
 ## 🔮 Gelecek Aşamalar (Roadmap)
 
 - [x] **Aşama 1 (Tamamlandı):** Katmanlı mimari iskeleti, HTML/CSS arayüzü, Swagger dokümantasyonu, test uç noktaları ve Docker konfigürasyonu.
-- [ ] **Aşama 2:** PostgreSQL üzerinde Mezun, Fakülte, Bölüm, Kariyer ve İletişim tablolarının SQLAlchemy modelleri ile tanımlanması ve Alembic migrasyonları.
-- [ ] **Aşama 3:** JWT (JSON Web Token) tabanlı güvenli kimlik doğrulama, kullanıcı rolleri (Öğrenci, Mezun, Akademisyen, Admin).
-- [ ] **Aşama 4:** Mezun arama, filtreleme, kariyer geçmişi ekleme ve mentorluk başvuru modülleri.
+- [x] **Aşama 2 (Tamamlandı):** PostgreSQL üzerinde Kullanıcı, İş İlanları, Başvurular ve Duyurular tablolarının SQLAlchemy modelleri ile tanımlanması ve Alembic migrasyonları.
+- [x] **Aşama 3 (Tamamlandı):** Kriptografik imzalı sunucu oturumları (signed sessions), CSRF savunması, kimlik doğrulama ara yazılımı, role özel sayfalar ve kullanıcı rolleri (Öğrenci, Mezun, Akademisyen, Admin).
+- [ ] **Aşama 4:** Gelişmiş mezun arama, filtreleme, kariyer geçmişi ekleme ve mentorluk modülleri.
 - [ ] **Aşama 5:** Veri analitiği ve üniversite mezun istihdam raporları paneli.
 
 ---
