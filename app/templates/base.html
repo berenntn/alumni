@@ -37,6 +37,9 @@
           <li><a href="/announcements" class="nav-link {% if request.url.path.startswith('/announcements') %}active{% endif %}">Duyurular</a></li>
           <li><a href="/about" class="nav-link {% if request.url.path == '/about' %}active{% endif %}">Hakkında</a></li>
           {% if user %}
+            {% if user.role == 'admin' %}
+              <li><a href="/admin" class="nav-link {% if request.url.path.startswith('/admin') %}active{% endif %}" style="color: var(--apple-blue); font-weight: 600;">Yönetim</a></li>
+            {% endif %}
             <li><a href="/dashboard" class="nav-link {% if request.url.path == '/dashboard' %}active{% endif %}">Panelim</a></li>
             <li>
               <form action="/logout" method="POST" style="display: inline; margin: 0;">

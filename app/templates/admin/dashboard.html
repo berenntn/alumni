@@ -1,0 +1,404 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Yönetim Paneli & Genel Bakış | {{ app_title_tr }}{% endblock %}
+{% block breadcrumb %}Genel Bakış{% endblock %}
+
+{% block extra_head %}
+<style>
+  .admin-dashboard-hero {
+    background: #ffffff;
+    border: 1px solid var(--pebble, #e2e2e5);
+    border-radius: var(--radius-card, 8px);
+    padding: 2rem 2.5rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+
+  .admin-hero-title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-title-1, 1.75rem);
+    font-weight: 700;
+    color: var(--carbon, #1d1d1f);
+    margin-bottom: 0.35rem;
+  }
+
+  .admin-hero-subtitle {
+    font-size: var(--font-size-subhead, 0.9375rem);
+    color: var(--graphite, #474747);
+  }
+
+  /* Metric Cards Grid */
+  .stats-grid-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .metric-card {
+    background: #ffffff;
+    border: 1px solid var(--pebble, #e2e2e5);
+    border-radius: var(--radius-card, 8px);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .metric-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .metric-label {
+    font-size: var(--font-size-caption-1, 0.75rem);
+    font-weight: 600;
+    color: var(--mist, #858585);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .metric-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .metric-icon-users { background: rgba(0, 113, 227, 0.1); color: var(--apple-blue, #0071e3); }
+  .metric-icon-alumni { background: rgba(52, 199, 89, 0.12); color: #1b632c; }
+  .metric-icon-students { background: rgba(255, 159, 10, 0.12); color: #b25000; }
+  .metric-icon-academicians { background: rgba(175, 82, 222, 0.12); color: #8944ab; }
+  .metric-icon-jobs { background: rgba(0, 113, 227, 0.1); color: var(--apple-blue, #0071e3); }
+  .metric-icon-apps { background: rgba(255, 45, 85, 0.12); color: #b31438; }
+  .metric-icon-news { background: rgba(90, 200, 250, 0.15); color: #007799; }
+
+  .metric-value {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--carbon, #1d1d1f);
+    line-height: 1;
+    margin-bottom: 0.35rem;
+  }
+
+  .metric-desc {
+    font-size: var(--font-size-caption-2, 0.6875rem);
+    color: var(--mist, #858585);
+  }
+
+  /* Quick Actions & Info Panel */
+  .quick-actions-panel {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 900px) {
+    .quick-actions-panel {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .action-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .action-card {
+    background: #ffffff;
+    border: 1px solid var(--pebble, #e2e2e5);
+    border-radius: var(--radius-card, 8px);
+    padding: 1.25rem;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+  }
+
+  .action-card:hover {
+    border-color: var(--apple-blue, #0071e3);
+    box-shadow: 0 4px 12px rgba(0, 113, 227, 0.08);
+  }
+
+  .action-card-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--carbon, #1d1d1f);
+    margin-bottom: 0.35rem;
+  }
+
+  .action-card-desc {
+    font-size: 0.8125rem;
+    color: var(--graphite, #474747);
+    line-height: 1.4;
+  }
+
+  .action-card-arrow {
+    margin-top: 1rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--apple-blue, #0071e3);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .system-info-card {
+    background: #ffffff;
+    border: 1px solid var(--pebble, #e2e2e5);
+    border-radius: var(--radius-card, 8px);
+    padding: 1.5rem;
+  }
+
+  .info-list-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--pebble, #e2e2e5);
+    font-size: 0.8125rem;
+  }
+
+  .info-list-item:last-child {
+    border-bottom: none;
+  }
+
+  .info-key {
+    color: var(--mist, #858585);
+  }
+
+  .info-val {
+    font-weight: 600;
+    color: var(--carbon, #1d1d1f);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero Banner -->
+<div class="admin-dashboard-hero">
+  <div>
+    <div style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; background: rgba(0, 113, 227, 0.08); color: var(--apple-blue); font-size: 0.75rem; font-weight: 600; margin-bottom: 0.5rem; text-transform: uppercase;">
+      Yönetim Merkezi
+    </div>
+    <h1 class="admin-hero-title">Sistem Özeti & Analitik</h1>
+    <p class="admin-hero-subtitle">
+      İstanbul Üniversitesi Mezun Takip Sistemi veritabanı canlı istatistikleri ve yönetim araçları.
+    </p>
+  </div>
+  <div>
+    <a href="/admin/users" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+      &plus; Kullanıcıları Görüntüle
+    </a>
+  </div>
+</div>
+
+<!-- Section: Kullanıcı Metrikleri -->
+<h2 style="font-size: 1.125rem; font-family: var(--font-display); font-weight: 700; color: var(--carbon); margin-bottom: 0.75rem;">
+  Kullanıcı ve Rol Dağılımı
+</h2>
+
+<div class="stats-grid-row">
+  
+  <!-- Total Users -->
+  <div class="metric-card">
+    <div class="metric-header">
+      <span class="metric-label">Toplam Kayıtlı</span>
+      <div class="metric-icon-wrap metric-icon-users">
+        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+      </div>
+    </div>
+    <div class="metric-value">{{ stats.total_users }}</div>
+    <div class="metric-desc">PostgreSQL veritabanındaki tüm kullanıcılar</div>
+  </div>
+
+  <!-- Alumni -->
+  <div class="metric-card">
+    <div class="metric-header">
+      <span class="metric-label">Mezunlar</span>
+      <div class="metric-icon-wrap metric-icon-alumni">
+        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+        </svg>
+      </div>
+    </div>
+    <div class="metric-value">{{ stats.alumni_count }}</div>
+    <div class="metric-desc">Rolü "alumnus" olan mezun hesapları</div>
+  </div>
+
+  <!-- Students -->
+  <div class="metric-card">
+    <div class="metric-header">
+      <span class="metric-label">Öğrenciler</span>
+      <div class="metric-icon-wrap metric-icon-students">
+        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+      </div>
+    </div>
+    <div class="metric-value">{{ stats.students_count }}</div>
+    <div class="metric-desc">Rolü "student" olan aktif öğrenciler</div>
+  </div>
+
+  <!-- Academicians -->
+  <div class="metric-card">
+    <div class="metric-header">
+      <span class="metric-label">Akademisyenler</span>
+      <div class="metric-icon-wrap metric-icon-academicians">
+        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+        </svg>
+      </div>
+    </div>
+    <div class="metric-value">{{ stats.academicians_count }}</div>
+    <div class="metric-desc">Duyuru yayınlama yetkili öğretim üyeleri</div>
+  </div>
+
+</div>
+
+<!-- Section: Platform İlan, Başvuru ve Duyuru Metrikleri -->
+<h2 style="font-size: 1.125rem; font-family: var(--font-display); font-weight: 700; color: var(--carbon); margin-top: 1.5rem; margin-bottom: 0.75rem;">
+  Kariyer & İletişim Metrikleri
+</h2>
+
+<div class="stats-grid-row">
+  
+  <!-- Active Jobs -->
+  <div class="metric-card">
+    <div class="metric-header">
+      <span class="metric-label">Aktif İş İlanları</span>
+      <div class="metric-icon-wrap metric-icon-jobs">
+        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+      </div>
+    </div>
+    <div class="metric-value">{{ stats.jobs_count }}</div>
+    <div class="metric-desc">Sistemde yayında olan kariyer ilanları</div>
+  </div>
+
+  <!-- Applications -->
+  <div class="metric-card">
+    <div class="metric-header">
+      <span class="metric-label">Toplam Başvurular</span>
+      <div class="metric-icon-wrap metric-icon-apps">
+        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+    </div>
+    <div class="metric-value">{{ stats.applications_count }}</div>
+    <div class="metric-desc">İlanlara yapılan aday başvuruları</div>
+  </div>
+
+  <!-- Announcements -->
+  <div class="metric-card">
+    <div class="metric-header">
+      <span class="metric-label">Duyurular</span>
+      <div class="metric-icon-wrap metric-icon-news">
+        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+        </svg>
+      </div>
+    </div>
+    <div class="metric-value">{{ stats.announcements_count }}</div>
+    <div class="metric-desc">Yayınlanan resmi bildirim ve haberler</div>
+  </div>
+
+</div>
+
+<!-- Quick Actions & System Status -->
+<div class="quick-actions-panel" style="margin-top: 1.5rem;">
+  
+  <div>
+    <h2 style="font-size: 1.125rem; font-family: var(--font-display); font-weight: 700; color: var(--carbon); margin-bottom: 0.75rem;">
+      Hızlı İşlemler
+    </h2>
+
+    <div class="action-cards-grid">
+      <a href="/admin/users" class="action-card">
+        <div>
+          <div class="action-card-title">Kullanıcı Rolleri</div>
+          <div class="action-card-desc">Mezun, öğrenci, akademisyen ve yönetici rollerini yönetin ve güvenli roller atayın.</div>
+        </div>
+        <div class="action-card-arrow">Kullanıcılara Git &rarr;</div>
+      </a>
+
+      <a href="/admin/jobs" class="action-card">
+        <div>
+          <div class="action-card-title">İş İlanları Yönetimi</div>
+          <div class="action-card-desc">Yeni kariyer fırsatları ekleyin, mevcut ilanları düzenleyin veya silin.</div>
+        </div>
+        <div class="action-card-arrow">İlanlara Git &rarr;</div>
+      </a>
+
+      <a href="/admin/applications" class="action-card">
+        <div>
+          <div class="action-card-title">Başvuru İnceleme</div>
+          <div class="action-card-desc">Adayların başvurularını inceleyin; kabul, ret veya beklemede durumlarını güncelleyin.</div>
+        </div>
+        <div class="action-card-arrow">Başvurulara Git &rarr;</div>
+      </a>
+
+      <a href="/admin/announcements" class="action-card">
+        <div>
+          <div class="action-card-title">Duyuru Yayınlama</div>
+          <div class="action-card-desc">Üniversite ve mezun topluluğuna yönelik yeni duyurular oluşturun ve yayınlayın.</div>
+        </div>
+        <div class="action-card-arrow">Duyurulara Git &rarr;</div>
+      </a>
+    </div>
+  </div>
+
+  <div>
+    <h2 style="font-size: 1.125rem; font-family: var(--font-display); font-weight: 700; color: var(--carbon); margin-bottom: 0.75rem;">
+      Sistem Güvenliği
+    </h2>
+
+    <div class="system-info-card">
+      <div class="info-list-item">
+        <span class="info-key">Veritabanı</span>
+        <span class="info-val">PostgreSQL</span>
+      </div>
+      <div class="info-list-item">
+        <span class="info-key">Oturum Doğrulama</span>
+        <span class="info-val">HMAC-SHA256 İmzalı Çerez</span>
+      </div>
+      <div class="info-list-item">
+        <span class="info-key">CSRF Savunması</span>
+        <span class="info-val">Senkronizer Belirteç (Aktif)</span>
+      </div>
+      <div class="info-list-item">
+        <span class="info-key">Yönetici Koruması</span>
+        <span class="info-val">Son Yönetici & Kendi Hesabını Silme Engeli</span>
+      </div>
+      <div class="info-list-item">
+        <span class="info-key">Aktif Yöneticiler</span>
+        <span class="info-val">{{ stats.admins_count }} Yönetici</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

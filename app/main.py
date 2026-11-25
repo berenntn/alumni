@@ -18,6 +18,7 @@ from app.api.application_routes import router as application_router
 from app.api.application_nested_routes import router as application_nested_router
 from app.api.job_posting_routes import router as job_posting_router
 from app.api.job_web_routes import router as job_web_router
+from app.api.admin_routes import admin_router
 
 from app.core.config import settings
 from app.core.database import init_db
@@ -82,6 +83,7 @@ app.include_router(job_posting_router)
 app.include_router(application_router)
 app.include_router(application_nested_router)
 app.include_router(job_web_router)
+app.include_router(admin_router)
 
 
 if __name__ == "__main__":

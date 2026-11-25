@@ -1,0 +1,277 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Duyurular Yönetimi | {{ app_title_tr }}{% endblock %}
+{% block breadcrumb %}Duyurular{% endblock %}
+
+{% block extra_head %}
+<style>
+  .admin-table-card {
+    background: #ffffff;
+    border: 1px solid var(--pebble, #e2e2e5);
+    border-radius: var(--radius-card, 8px);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.875rem;
+  }
+
+  .admin-table th {
+    background: #fafafc;
+    padding: 0.85rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mist, #858585);
+    border-bottom: 1px solid var(--pebble, #e2e2e5);
+  }
+
+  .admin-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--pebble, #e2e2e5);
+    color: var(--carbon, #1d1d1f);
+    vertical-align: middle;
+  }
+
+  .admin-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .admin-table tr:hover td {
+    background: #fbfbfd;
+  }
+
+  .action-btn-group {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .btn-sm-action {
+    padding: 0.3rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid var(--pebble, #e2e2e5);
+    background: #ffffff;
+    color: var(--graphite, #474747);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-sm-action:hover {
+    border-color: var(--apple-blue, #0071e3);
+    color: var(--apple-blue, #0071e3);
+  }
+
+  .btn-sm-delete {
+    color: var(--error, #ff3b30);
+  }
+
+  .btn-sm-delete:hover {
+    background: rgba(255, 59, 48, 0.08);
+    border-color: rgba(255, 59, 48, 0.3);
+    color: #a01a14;
+  }
+
+  .admin-form-group {
+    margin-bottom: 1rem;
+  }
+
+  .admin-form-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--carbon, #1d1d1f);
+    margin-bottom: 0.35rem;
+  }
+
+  .admin-form-input, .admin-form-textarea {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--pebble, #e2e2e5);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    outline: none;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+
+  .admin-form-input:focus, .admin-form-textarea:focus {
+    border-color: var(--apple-blue, #0071e3);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h1 style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--carbon); margin-bottom: 0.25rem;">
+      Duyurular Yönetimi
+    </h1>
+    <p style="font-size: 0.875rem; color: var(--graphite);">
+      Toplam {{ announcements|length }} duyuru yayında. Yeni duyuru yayınlayın veya mevcutları düzenleyin.
+    </p>
+  </div>
+  <div>
+    <button type="button" class="btn btn-primary" onclick="openModal('createAnnouncementModal')">
+      &plus; Yeni Duyuru Ekle
+    </button>
+  </div>
+</div>
+
+<div class="admin-table-card">
+  <div style="overflow-x: auto;">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Duyuru Başlığı</th>
+          <th>Yayınlayan</th>
+          <th>İçerik Özeti</th>
+          <th style="text-align: right;">İşlemler</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if announcements %}
+          {% for a in announcements %}
+            <tr>
+              <td style="font-family: var(--font-mono); font-size: 0.8125rem; color: var(--mist);">#{{ a.id }}</td>
+              <td>
+                <div style="font-weight: 600; color: var(--carbon);">{{ a.title }}</div>
+              </td>
+              <td>
+                <span style="font-size: 0.75rem; padding: 0.2rem 0.55rem; background: var(--frost); border-radius: 9999px; border: 1px solid var(--pebble);">
+                  {{ a.author_name }}
+                </span>
+              </td>
+              <td style="max-width: 380px;">
+                <div style="font-size: 0.8125rem; color: var(--graphite); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  {{ a.content }}
+                </div>
+              </td>
+              <td style="text-align: right;">
+                <div class="action-btn-group" style="justify-content: flex-end;">
+                  <button type="button" class="btn-sm-action" onclick="openEditAnnouncementModal({{ a.id }}, '{{ a.title|escape }}', `{{ a.content|escape }}`)">
+                    Düzenle
+                  </button>
+                  <button type="button" class="btn-sm-action btn-sm-delete" onclick="openDeleteAnnouncementModal({{ a.id }}, '{{ a.title|escape }}')">
+                    Sil
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 3rem; color: var(--mist);">
+              Yayınlanmış duyuru bulunmamaktadır.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Create Announcement -->
+<div class="admin-modal-backdrop" id="createAnnouncementModal">
+  <div class="admin-modal">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">Yeni Duyuru Yayınla</h3>
+      <button type="button" class="admin-modal-close" onclick="closeModal('createAnnouncementModal')">&times;</button>
+    </div>
+    <form method="POST" action="/admin/announcements">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token or (user.csrf_token if user else '') }}">
+      <div class="admin-modal-body">
+        <div class="admin-form-group">
+          <label class="admin-form-label">Duyuru Başlığı *</label>
+          <input type="text" name="title" class="admin-form-input" placeholder="Örn: 2026 Mezunlar Buluşması Tarihleri" required>
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Duyuru İçeriği *</label>
+          <textarea name="content" class="admin-form-textarea" rows="5" placeholder="Duyuru detayları..." required></textarea>
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('createAnnouncementModal')">İptal</button>
+        <button type="submit" class="btn btn-primary">Duyuruyu Yayınla</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Edit Announcement -->
+<div class="admin-modal-backdrop" id="editAnnouncementModal">
+  <div class="admin-modal">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">Duyuruyu Düzenle</h3>
+      <button type="button" class="admin-modal-close" onclick="closeModal('editAnnouncementModal')">&times;</button>
+    </div>
+    <form id="editAnnouncementForm" method="POST" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token or (user.csrf_token if user else '') }}">
+      <div class="admin-modal-body">
+        <div class="admin-form-group">
+          <label class="admin-form-label">Duyuru Başlığı *</label>
+          <input type="text" name="title" id="edit_announcement_title" class="admin-form-input" required>
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Duyuru İçeriği *</label>
+          <textarea name="content" id="edit_announcement_content" class="admin-form-textarea" rows="5" required></textarea>
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('editAnnouncementModal')">İptal</button>
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Delete Announcement -->
+<div class="admin-modal-backdrop" id="deleteAnnouncementModal">
+  <div class="admin-modal">
+    <div class="admin-modal-header" style="background: rgba(255, 59, 48, 0.06);">
+      <h3 class="admin-modal-title" style="color: var(--error, #ff3b30);">Duyuruyu Sil</h3>
+      <button type="button" class="admin-modal-close" onclick="closeModal('deleteAnnouncementModal')">&times;</button>
+    </div>
+    <form id="deleteAnnouncementForm" method="POST" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token or (user.csrf_token if user else '') }}">
+      <div class="admin-modal-body">
+        <p style="font-size: 0.875rem; color: var(--graphite); line-height: 1.5;">
+          <strong id="delete_announcement_title"></strong> başlıklı duyuruyu silmek istediğinizden emin misiniz?
+        </p>
+      </div>
+      <div class="admin-modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('deleteAnnouncementModal')">İptal</button>
+        <button type="submit" class="btn" style="background: var(--error, #ff3b30); color: #ffffff; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer;">
+          Evet, Duyuruyu Sil
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function openEditAnnouncementModal(id, title, content) {
+    document.getElementById('editAnnouncementForm').action = '/admin/announcements/' + id + '/edit';
+    document.getElementById('edit_announcement_title').value = title;
+    document.getElementById('edit_announcement_content').value = content;
+    openModal('editAnnouncementModal');
+  }
+
+  function openDeleteAnnouncementModal(id, title) {
+    document.getElementById('deleteAnnouncementForm').action = '/admin/announcements/' + id + '/delete';
+    document.getElementById('delete_announcement_title').textContent = title;
+    openModal('deleteAnnouncementModal');
+  }
+</script>
+{% endblock %}

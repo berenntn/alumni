@@ -67,6 +67,20 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     if exc.status_code == 404:
         return await not_found_exception_handler(request, exc)
 
+    if exc.status_code == 403 and not _is_api_request(request):
+        return templates.TemplateResponse(
+            request=request,
+            name="403.html",
+            context={
+                "detail": exc.detail if exc.detail else "Bu sayfaya erişim yetkiniz bulunmamaktadır.",
+                "app_name": settings.APP_NAME,
+                "app_title_tr": settings.APP_TITLE_TR,
+                "app_description": settings.APP_DESCRIPTION,
+                "user": getattr(request.state, "user", None),
+            },
+            status_code=403,
+        )
+
     if exc.status_code >= 500:
         logger.error(
             f"HTTP {exc.status_code} Error on {request.method} {request.url.path}: {exc.detail}",

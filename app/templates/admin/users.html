@@ -1,0 +1,481 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Kullanıcı Yönetimi | {{ app_title_tr }}{% endblock %}
+{% block breadcrumb %}Kullanıcı Yönetimi{% endblock %}
+
+{% block extra_head %}
+<style>
+  .admin-table-card {
+    background: #ffffff;
+    border: 1px solid var(--pebble, #e2e2e5);
+    border-radius: var(--radius-card, 8px);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .table-toolbar {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--pebble, #e2e2e5);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .table-filter-pills {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-pill {
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--graphite, #474747);
+    background: var(--frost, #f5f5f7);
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+  }
+
+  .filter-pill:hover {
+    background: #ebebee;
+  }
+
+  .filter-pill.active {
+    background: var(--apple-blue, #0071e3);
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  .table-search-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .table-search-input {
+    padding: 0.45rem 0.85rem;
+    border: 1px solid var(--pebble, #e2e2e5);
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    width: 240px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .table-search-input:focus {
+    border-color: var(--apple-blue, #0071e3);
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.875rem;
+  }
+
+  .admin-table th {
+    background: #fafafc;
+    padding: 0.85rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mist, #858585);
+    border-bottom: 1px solid var(--pebble, #e2e2e5);
+  }
+
+  .admin-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--pebble, #e2e2e5);
+    color: var(--carbon, #1d1d1f);
+    vertical-align: middle;
+  }
+
+  .admin-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .admin-table tr:hover td {
+    background: #fbfbfd;
+  }
+
+  .user-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .user-table-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--frost, #f5f5f7);
+    color: var(--carbon, #1d1d1f);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--pebble, #e2e2e5);
+  }
+
+  .badge-role {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .badge-role-admin {
+    background: rgba(255, 59, 48, 0.12);
+    color: #a01a14;
+    border: 1px solid rgba(255, 59, 48, 0.3);
+  }
+
+  .badge-role-academician {
+    background: rgba(175, 82, 222, 0.12);
+    color: #8944ab;
+    border: 1px solid rgba(175, 82, 222, 0.3);
+  }
+
+  .badge-role-alumnus {
+    background: rgba(52, 199, 89, 0.12);
+    color: #1b632c;
+    border: 1px solid rgba(52, 199, 89, 0.3);
+  }
+
+  .badge-role-student {
+    background: rgba(255, 159, 10, 0.12);
+    color: #b25000;
+    border: 1px solid rgba(255, 159, 10, 0.3);
+  }
+
+  .action-btn-group {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .btn-sm-action {
+    padding: 0.3rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid var(--pebble, #e2e2e5);
+    background: #ffffff;
+    color: var(--graphite, #474747);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-sm-action:hover {
+    border-color: var(--apple-blue, #0071e3);
+    color: var(--apple-blue, #0071e3);
+  }
+
+  .btn-sm-delete {
+    color: var(--error, #ff3b30);
+  }
+
+  .btn-sm-delete:hover {
+    background: rgba(255, 59, 48, 0.08);
+    border-color: rgba(255, 59, 48, 0.3);
+    color: #a01a14;
+  }
+
+  .admin-form-group {
+    margin-bottom: 1rem;
+  }
+
+  .admin-form-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--carbon, #1d1d1f);
+    margin-bottom: 0.35rem;
+  }
+
+  .admin-form-input, .admin-form-select {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--pebble, #e2e2e5);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .admin-form-input:focus, .admin-form-select:focus {
+    border-color: var(--apple-blue, #0071e3);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h1 style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--carbon); margin-bottom: 0.25rem;">
+      Kullanıcı Yönetimi
+    </h1>
+    <p style="font-size: 0.875rem; color: var(--graphite);">
+      Toplam {{ total }} kayıtlı kullanıcı listeleniyor. Rol atamalarını ve kullanıcı bilgilerini yönetin.
+    </p>
+  </div>
+</div>
+
+<div class="admin-table-card">
+  
+  <!-- Toolbar: Filter Pills & Search -->
+  <div class="table-toolbar">
+    <div class="table-filter-pills">
+      <a href="/admin/users{% if search %}?search={{ search }}{% endif %}" class="filter-pill {% if not current_role or current_role == 'all' %}active{% endif %}">
+        Tümü ({{ total }})
+      </a>
+      <a href="/admin/users?role=alumnus{% if search %}&search={{ search }}{% endif %}" class="filter-pill {% if current_role == 'alumnus' %}active{% endif %}">
+        Mezunlar
+      </a>
+      <a href="/admin/users?role=student{% if search %}&search={{ search }}{% endif %}" class="filter-pill {% if current_role == 'student' %}active{% endif %}">
+        Öğrenciler
+      </a>
+      <a href="/admin/users?role=academician{% if search %}&search={{ search }}{% endif %}" class="filter-pill {% if current_role == 'academician' %}active{% endif %}">
+        Akademisyenler
+      </a>
+      <a href="/admin/users?role=admin{% if search %}&search={{ search }}{% endif %}" class="filter-pill {% if current_role == 'admin' %}active{% endif %}">
+        Yöneticiler
+      </a>
+    </div>
+
+    <form method="GET" action="/admin/users" class="table-search-form">
+      {% if current_role %}
+        <input type="hidden" name="role" value="{{ current_role }}">
+      {% endif %}
+      <input type="text" name="search" class="table-search-input" placeholder="Ad, e-posta veya bölüm..." value="{{ search or '' }}">
+      <button type="submit" class="btn btn-outline" style="padding: 0.45rem 0.85rem; font-size: 0.8125rem;">
+        Ara
+      </button>
+      {% if search %}
+        <a href="/admin/users{% if current_role %}?role={{ current_role }}{% endif %}" class="btn-sm-action" style="text-decoration: none; display: flex; align-items: center;">
+          Temizle
+        </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div style="overflow-x: auto;">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Kullanıcı</th>
+          <th>Bölüm</th>
+          <th>Mezuniyet Yılı</th>
+          <th>Rol</th>
+          <th style="text-align: right;">İşlemler</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if users %}
+          {% for u in users %}
+            <tr>
+              <td style="font-family: var(--font-mono); font-size: 0.8125rem; color: var(--mist);">#{{ u.id }}</td>
+              <td>
+                <div class="user-cell">
+                  <div class="user-table-avatar">
+                    {{ u.name[:2]|upper }}
+                  </div>
+                  <div>
+                    <div style="font-weight: 600; color: var(--carbon);">{{ u.name }}</div>
+                    <div style="font-size: 0.75rem; color: var(--mist);">{{ u.email }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>{{ u.department }}</td>
+              <td>{{ u.graduation_year }}</td>
+              <td>
+                <span class="badge-role badge-role-{{ u.role }}">
+                  {{ u.role }}
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <div class="action-btn-group" style="justify-content: flex-end;">
+                  <button type="button" class="btn-sm-action" onclick="openEditUserModal({{ u.id }}, '{{ u.name }}', '{{ u.email }}', '{{ u.department }}', {{ u.graduation_year }}, '{{ u.role }}')">
+                    Düzenle
+                  </button>
+                  <button type="button" class="btn-sm-action" onclick="openRoleModal({{ u.id }}, '{{ u.name }}', '{{ u.role }}')">
+                    Rol Değiştir
+                  </button>
+                  {% if u.id != user.user_id and u.id != user.id %}
+                    <button type="button" class="btn-sm-action btn-sm-delete" onclick="openDeleteUserModal({{ u.id }}, '{{ u.name }}')">
+                      Sil
+                    </button>
+                  {% else %}
+                    <button type="button" class="btn-sm-action" disabled title="Kendi hesabınızı silemezsiniz" style="opacity: 0.4; cursor: not-allowed;">
+                      Sil
+                    </button>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 3rem; color: var(--mist);">
+              Kriterlere uygun kullanıcı bulunamadı.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ------------------------------------------------------------------------ -->
+<!-- Modal: Edit User Details                                                  -->
+<!-- ------------------------------------------------------------------------ -->
+<div class="admin-modal-backdrop" id="editUserModal">
+  <div class="admin-modal">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">Kullanıcı Bilgilerini Düzenle</h3>
+      <button type="button" class="admin-modal-close" onclick="closeModal('editUserModal')">&times;</button>
+    </div>
+    <form id="editUserForm" method="POST" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token or (user.csrf_token if user else '') }}">
+      <div class="admin-modal-body">
+        <div class="admin-form-group">
+          <label class="admin-form-label">Ad Soyad</label>
+          <input type="text" name="name" id="edit_user_name" class="admin-form-input" required>
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">E-posta Adresi</label>
+          <input type="email" name="email" id="edit_user_email" class="admin-form-input" required>
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Bölüm</label>
+          <input type="text" name="department" id="edit_user_dept" class="admin-form-input" required>
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Mezuniyet Yılı</label>
+          <input type="number" name="graduation_year" id="edit_user_year" class="admin-form-input" min="1900" max="2100" required>
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Rol</label>
+          <select name="role" id="edit_user_role" class="admin-form-select">
+            <option value="alumnus">Mezun (alumnus)</option>
+            <option value="student">Öğrenci (student)</option>
+            <option value="academician">Akademisyen (academician)</option>
+            <option value="admin">Yönetici (admin)</option>
+          </select>
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('editUserModal')">İptal</button>
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ------------------------------------------------------------------------ -->
+<!-- Modal: Change Role                                                       -->
+<!-- ------------------------------------------------------------------------ -->
+<div class="admin-modal-backdrop" id="changeRoleModal">
+  <div class="admin-modal">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">Kullanıcı Rolü Değiştir</h3>
+      <button type="button" class="admin-modal-close" onclick="closeModal('changeRoleModal')">&times;</button>
+    </div>
+    <form id="changeRoleForm" method="POST" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token or (user.csrf_token if user else '') }}">
+      <div class="admin-modal-body">
+        <p style="font-size: 0.875rem; color: var(--graphite); margin-bottom: 1rem;">
+          <strong id="role_target_name"></strong> adlı kullanıcının sistemdeki rolünü güncelleyin:
+        </p>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Yeni Rol</label>
+          <select name="role" id="target_new_role" class="admin-form-select">
+            <option value="alumnus">Mezun (alumnus)</option>
+            <option value="student">Öğrenci (student)</option>
+            <option value="academician">Akademisyen (academician)</option>
+            <option value="admin">Yönetici (admin)</option>
+          </select>
+        </div>
+        <p style="font-size: 0.75rem; color: var(--mist);">
+          Not: Sistemdeki son yönetici hesabının rolü demote edilemez (Last Admin Koruması).
+        </p>
+      </div>
+      <div class="admin-modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('changeRoleModal')">İptal</button>
+        <button type="submit" class="btn btn-primary">Rolü Güncelle</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ------------------------------------------------------------------------ -->
+<!-- Modal: Delete User Confirmation                                          -->
+<!-- ------------------------------------------------------------------------ -->
+<div class="admin-modal-backdrop" id="deleteUserModal">
+  <div class="admin-modal">
+    <div class="admin-modal-header" style="background: rgba(255, 59, 48, 0.06);">
+      <h3 class="admin-modal-title" style="color: var(--error, #ff3b30);">Kullanıcıyı Sil</h3>
+      <button type="button" class="admin-modal-close" onclick="closeModal('deleteUserModal')">&times;</button>
+    </div>
+    <form id="deleteUserForm" method="POST" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token or (user.csrf_token if user else '') }}">
+      <div class="admin-modal-body">
+        <p style="font-size: 0.875rem; color: var(--graphite); line-height: 1.5;">
+          <strong id="delete_target_name"></strong> adlı kullanıcıyı kalıcı olarak silmek istediğinizden emin misiniz?
+        </p>
+        <p style="font-size: 0.8125rem; color: var(--error, #ff3b30); margin-top: 0.75rem; background: rgba(255, 59, 48, 0.08); padding: 0.65rem 0.85rem; border-radius: 6px;">
+          &excl; Bu işlem geri alınamaz. Kullanıcının tüm başvuru ve ilişkili verileri veritabanından silinecektir.
+        </p>
+      </div>
+      <div class="admin-modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('deleteUserModal')">İptal</button>
+        <button type="submit" class="btn" style="background: var(--error, #ff3b30); color: #ffffff; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer;">
+          Evet, Kullanıcıyı Sil
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function openEditUserModal(id, name, email, dept, year, role) {
+    document.getElementById('editUserForm').action = '/admin/users/' + id + '/edit';
+    document.getElementById('edit_user_name').value = name;
+    document.getElementById('edit_user_email').value = email;
+    document.getElementById('edit_user_dept').value = dept;
+    document.getElementById('edit_user_year').value = year;
+    document.getElementById('edit_user_role').value = role;
+    openModal('editUserModal');
+  }
+
+  function openRoleModal(id, name, currentRole) {
+    document.getElementById('changeRoleForm').action = '/admin/users/' + id + '/role';
+    document.getElementById('role_target_name').textContent = name;
+    document.getElementById('target_new_role').value = currentRole;
+    openModal('changeRoleModal');
+  }
+
+  function openDeleteUserModal(id, name) {
+    document.getElementById('deleteUserForm').action = '/admin/users/' + id + '/delete';
+    document.getElementById('delete_target_name').textContent = name;
+    openModal('deleteUserModal');
+  }
+</script>
+{% endblock %}

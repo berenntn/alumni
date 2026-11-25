@@ -1,0 +1,283 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Başvuru İnceleme | {{ app_title_tr }}{% endblock %}
+{% block breadcrumb %}Başvurular{% endblock %}
+
+{% block extra_head %}
+<style>
+  .admin-table-card {
+    background: #ffffff;
+    border: 1px solid var(--pebble, #e2e2e5);
+    border-radius: var(--radius-card, 8px);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.875rem;
+  }
+
+  .admin-table th {
+    background: #fafafc;
+    padding: 0.85rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mist, #858585);
+    border-bottom: 1px solid var(--pebble, #e2e2e5);
+  }
+
+  .admin-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--pebble, #e2e2e5);
+    color: var(--carbon, #1d1d1f);
+    vertical-align: middle;
+  }
+
+  .admin-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .admin-table tr:hover td {
+    background: #fbfbfd;
+  }
+
+  .badge-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .badge-status-pending, .badge-status-applied {
+    background: rgba(255, 159, 10, 0.12);
+    color: #b25000;
+    border: 1px solid rgba(255, 159, 10, 0.3);
+  }
+
+  .badge-status-accepted {
+    background: rgba(52, 199, 89, 0.12);
+    color: #1b632c;
+    border: 1px solid rgba(52, 199, 89, 0.3);
+  }
+
+  .badge-status-rejected {
+    background: rgba(255, 59, 48, 0.12);
+    color: #a01a14;
+    border: 1px solid rgba(255, 59, 48, 0.3);
+  }
+
+  .action-btn-group {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .btn-sm-action {
+    padding: 0.3rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid var(--pebble, #e2e2e5);
+    background: #ffffff;
+    color: var(--graphite, #474747);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-sm-action:hover {
+    border-color: var(--apple-blue, #0071e3);
+    color: var(--apple-blue, #0071e3);
+  }
+
+  .btn-sm-delete {
+    color: var(--error, #ff3b30);
+  }
+
+  .btn-sm-delete:hover {
+    background: rgba(255, 59, 48, 0.08);
+    border-color: rgba(255, 59, 48, 0.3);
+    color: #a01a14;
+  }
+
+  .admin-form-group {
+    margin-bottom: 1rem;
+  }
+
+  .admin-form-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--carbon, #1d1d1f);
+    margin-bottom: 0.35rem;
+  }
+
+  .admin-form-select {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--pebble, #e2e2e5);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .admin-form-select:focus {
+    border-color: var(--apple-blue, #0071e3);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom: 1.5rem;">
+  <h1 style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--carbon); margin-bottom: 0.25rem;">
+    Başvuru İnceleme
+  </h1>
+  <p style="font-size: 0.875rem; color: var(--graphite);">
+    Toplam {{ applications|length }} başvuru listeleniyor. Aday değerlendirmelerini yapın ve durumlarını güncelleyin.
+  </p>
+</div>
+
+<div class="admin-table-card">
+  <div style="overflow-x: auto;">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Aday Bilgisi</th>
+          <th>Bölüm</th>
+          <th>İlan & Şirket</th>
+          <th>Durum</th>
+          <th style="text-align: right;">İşlemler</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if applications %}
+          {% for app in applications %}
+            <tr>
+              <td style="font-family: var(--font-mono); font-size: 0.8125rem; color: var(--mist);">#{{ app.id }}</td>
+              <td>
+                <div style="font-weight: 600; color: var(--carbon);">{{ app.user_name }}</div>
+                <div style="font-size: 0.75rem; color: var(--mist);">{{ app.user_email }}</div>
+              </td>
+              <td>{{ app.user_department }}</td>
+              <td>
+                <div style="font-weight: 600; color: var(--carbon);">{{ app.job_title }}</div>
+                <div style="font-size: 0.75rem; color: var(--mist);">{{ app.job_company }}</div>
+              </td>
+              <td>
+                <span class="badge-status badge-status-{{ app.status }}">
+                  {% if app.status == 'accepted' %}
+                    Kabul Edildi
+                  {% elif app.status == 'rejected' %}
+                    Reddedildi
+                  {% else %}
+                    Değerlendiriliyor
+                  {% endif %}
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <div class="action-btn-group" style="justify-content: flex-end;">
+                  <button type="button" class="btn-sm-action" onclick="openStatusModal({{ app.id }}, '{{ app.user_name }}', '{{ app.job_title }}', '{{ app.status }}')">
+                    Durum Değiştir
+                  </button>
+                  <button type="button" class="btn-sm-action btn-sm-delete" onclick="openDeleteAppModal({{ app.id }}, '{{ app.user_name }}')">
+                    Sil
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 3rem; color: var(--mist);">
+              Henüz bir iş başvurusu bulunmamaktadır.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Update Application Status -->
+<div class="admin-modal-backdrop" id="updateStatusModal">
+  <div class="admin-modal">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">Başvuru Durumunu Güncelle</h3>
+      <button type="button" class="admin-modal-close" onclick="closeModal('updateStatusModal')">&times;</button>
+    </div>
+    <form id="updateStatusForm" method="POST" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token or (user.csrf_token if user else '') }}">
+      <div class="admin-modal-body">
+        <p style="font-size: 0.875rem; color: var(--graphite); margin-bottom: 1rem;">
+          <strong id="status_applicant_name"></strong> adlı adayın <strong id="status_job_title"></strong> ilanına yaptığı başvurunun durumu:
+        </p>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Başvuru Durumu</label>
+          <select name="status" id="app_new_status" class="admin-form-select">
+            <option value="pending">Değerlendiriliyor (pending)</option>
+            <option value="accepted">Kabul Edildi (accepted)</option>
+            <option value="rejected">Reddedildi (rejected)</option>
+          </select>
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('updateStatusModal')">İptal</button>
+        <button type="submit" class="btn btn-primary">Durumu Güncelle</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Delete Application -->
+<div class="admin-modal-backdrop" id="deleteAppModal">
+  <div class="admin-modal">
+    <div class="admin-modal-header" style="background: rgba(255, 59, 48, 0.06);">
+      <h3 class="admin-modal-title" style="color: var(--error, #ff3b30);">Başvuruyu Sil</h3>
+      <button type="button" class="admin-modal-close" onclick="closeModal('deleteAppModal')">&times;</button>
+    </div>
+    <form id="deleteAppForm" method="POST" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token or (user.csrf_token if user else '') }}">
+      <div class="admin-modal-body">
+        <p style="font-size: 0.875rem; color: var(--graphite); line-height: 1.5;">
+          <strong id="delete_app_applicant"></strong> adlı adayın başvurusunu silmek istediğinizden emin misiniz?
+        </p>
+      </div>
+      <div class="admin-modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('deleteAppModal')">İptal</button>
+        <button type="submit" class="btn" style="background: var(--error, #ff3b30); color: #ffffff; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer;">
+          Evet, Başvuruyu Sil
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function openStatusModal(id, applicant, job, currentStatus) {
+    document.getElementById('updateStatusForm').action = '/admin/applications/' + id + '/status';
+    document.getElementById('status_applicant_name').textContent = applicant;
+    document.getElementById('status_job_title').textContent = job;
+    document.getElementById('app_new_status').value = currentStatus === 'applied' ? 'pending' : currentStatus;
+    openModal('updateStatusModal');
+  }
+
+  function openDeleteAppModal(id, applicant) {
+    document.getElementById('deleteAppForm').action = '/admin/applications/' + id + '/delete';
+    document.getElementById('delete_app_applicant').textContent = applicant;
+    openModal('deleteAppModal');
+  }
+</script>
+{% endblock %}

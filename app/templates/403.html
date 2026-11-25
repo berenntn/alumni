@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}403 - Yetkisiz Erişim | {{ app_title_tr }}{% endblock %}
+
+{% block content %}
+<section class="card" style="max-width: 700px; margin: 4rem auto; padding: 3.5rem 2rem; text-align: center;">
+  
+  <div style="display: inline-flex; align-items: center; justify-content: center; width: 88px; height: 88px; border-radius: 50%; background: rgba(255, 59, 48, 0.08); color: var(--error, #ff3b30); font-size: 2.25rem; font-weight: 700; margin-bottom: 1.5rem; border: 1px solid rgba(255, 59, 48, 0.2); font-family: var(--font-display);">
+    403
+  </div>
+
+  <h1 style="font-family: var(--font-display); color: var(--carbon); font-size: var(--font-size-title-1); margin-bottom: 0.75rem;">
+    Erişim İzniniz Yok
+  </h1>
+
+  <p style="color: var(--graphite); font-size: var(--font-size-body); max-width: 500px; margin: 0 auto 2rem; line-height: 1.5;">
+    {{ detail or "Bu sayfayı görüntülemek veya bu işlemi gerçekleştirmek için gerekli yetkilere sahip değilsiniz." }}
+  </p>
+
+  <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+    <a href="/" class="btn btn-primary">
+      &larr; Ana Sayfaya Dön
+    </a>
+    <a href="/dashboard" class="btn btn-outline">
+      Kullanıcı Paneline Git
+    </a>
+  </div>
+
+</section>
+{% endblock %}

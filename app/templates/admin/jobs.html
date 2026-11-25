@@ -1,0 +1,315 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}İş İlanları Yönetimi | {{ app_title_tr }}{% endblock %}
+{% block breadcrumb %}İş İlanları{% endblock %}
+
+{% block extra_head %}
+<style>
+  .admin-table-card {
+    background: #ffffff;
+    border: 1px solid var(--pebble, #e2e2e5);
+    border-radius: var(--radius-card, 8px);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.875rem;
+  }
+
+  .admin-table th {
+    background: #fafafc;
+    padding: 0.85rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mist, #858585);
+    border-bottom: 1px solid var(--pebble, #e2e2e5);
+  }
+
+  .admin-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--pebble, #e2e2e5);
+    color: var(--carbon, #1d1d1f);
+    vertical-align: middle;
+  }
+
+  .admin-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .admin-table tr:hover td {
+    background: #fbfbfd;
+  }
+
+  .action-btn-group {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .btn-sm-action {
+    padding: 0.3rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid var(--pebble, #e2e2e5);
+    background: #ffffff;
+    color: var(--graphite, #474747);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-sm-action:hover {
+    border-color: var(--apple-blue, #0071e3);
+    color: var(--apple-blue, #0071e3);
+  }
+
+  .btn-sm-delete {
+    color: var(--error, #ff3b30);
+  }
+
+  .btn-sm-delete:hover {
+    background: rgba(255, 59, 48, 0.08);
+    border-color: rgba(255, 59, 48, 0.3);
+    color: #a01a14;
+  }
+
+  .admin-form-group {
+    margin-bottom: 1rem;
+  }
+
+  .admin-form-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--carbon, #1d1d1f);
+    margin-bottom: 0.35rem;
+  }
+
+  .admin-form-input, .admin-form-select, .admin-form-textarea {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--pebble, #e2e2e5);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    outline: none;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+
+  .admin-form-input:focus, .admin-form-select:focus, .admin-form-textarea:focus {
+    border-color: var(--apple-blue, #0071e3);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h1 style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--carbon); margin-bottom: 0.25rem;">
+      İş İlanları Yönetimi
+    </h1>
+    <p style="font-size: 0.875rem; color: var(--graphite);">
+      Toplam {{ jobs|length }} kariyer fırsatı listeleniyor. Yeni ilan ekleyin veya mevcutları düzenleyin.
+    </p>
+  </div>
+  <div>
+    <button type="button" class="btn btn-primary" onclick="openModal('createJobModal')">
+      &plus; Yeni İş İlanı Ekle
+    </button>
+  </div>
+</div>
+
+<div class="admin-table-card">
+  <div style="overflow-x: auto;">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Pozisyon / Başlık</th>
+          <th>Şirket</th>
+          <th>Lokasyon</th>
+          <th>Çalışma Türü</th>
+          <th>Başvurular</th>
+          <th style="text-align: right;">İşlemler</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if jobs %}
+          {% for j in jobs %}
+            <tr>
+              <td style="font-family: var(--font-mono); font-size: 0.8125rem; color: var(--mist);">#{{ j.id }}</td>
+              <td>
+                <div style="font-weight: 600; color: var(--carbon);">{{ j.title }}</div>
+                <div style="font-size: 0.75rem; color: var(--mist); max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  {{ j.description }}
+                </div>
+              </td>
+              <td>{{ j.company_name }}</td>
+              <td>{{ j.location or "Belirtilmedi" }}</td>
+              <td>
+                <span style="font-size: 0.75rem; padding: 0.2rem 0.5rem; background: var(--frost); border-radius: 4px; border: 1px solid var(--pebble);">
+                  {{ j.employment_type or "Tam Zamanlı" }}
+                </span>
+              </td>
+              <td>
+                <a href="/admin/applications" style="font-weight: 600; color: var(--apple-blue); text-decoration: none;">
+                  {{ j.applications_count }} Başvuru
+                </a>
+              </td>
+              <td style="text-align: right;">
+                <div class="action-btn-group" style="justify-content: flex-end;">
+                  <button type="button" class="btn-sm-action" onclick="openEditJobModal({{ j.id }}, '{{ j.title|escape }}', '{{ j.company_name|escape }}', '{{ (j.location or '')|escape }}', '{{ (j.employment_type or '')|escape }}', `{{ (j.description or '')|escape }}`)">
+                    Düzenle
+                  </button>
+                  <button type="button" class="btn-sm-action btn-sm-delete" onclick="openDeleteJobModal({{ j.id }}, '{{ j.title|escape }}')">
+                    Sil
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 3rem; color: var(--mist);">
+              Kayıtlı iş ilanı bulunmamaktadır.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Create Job -->
+<div class="admin-modal-backdrop" id="createJobModal">
+  <div class="admin-modal">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">Yeni İş İlanı Oluştur</h3>
+      <button type="button" class="admin-modal-close" onclick="closeModal('createJobModal')">&times;</button>
+    </div>
+    <form method="POST" action="/admin/jobs">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token or (user.csrf_token if user else '') }}">
+      <div class="admin-modal-body">
+        <div class="admin-form-group">
+          <label class="admin-form-label">Pozisyon Başlığı *</label>
+          <input type="text" name="title" class="admin-form-input" placeholder="Örn: Senior Backend Developer" required maxlength="120">
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Şirket / Kurum Adı *</label>
+          <input type="text" name="company_name" class="admin-form-input" placeholder="Örn: İstanbul Üniversitesi Bilgi İşlem" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="admin-form-group">
+            <label class="admin-form-label">Lokasyon</label>
+            <input type="text" name="location" class="admin-form-input" placeholder="Örn: İstanbul / Hibrit">
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label">Çalışma Türü</label>
+            <input type="text" name="employment_type" class="admin-form-input" placeholder="Örn: Tam Zamanlı, Staj">
+          </div>
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">İlan Açıklaması</label>
+          <textarea name="description" class="admin-form-textarea" rows="4" placeholder="İş tanımı, aranan nitelikler ve yan haklar..."></textarea>
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('createJobModal')">İptal</button>
+        <button type="submit" class="btn btn-primary">İlanı Yayınla</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Edit Job -->
+<div class="admin-modal-backdrop" id="editJobModal">
+  <div class="admin-modal">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title">İş İlanını Düzenle</h3>
+      <button type="button" class="admin-modal-close" onclick="closeModal('editJobModal')">&times;</button>
+    </div>
+    <form id="editJobForm" method="POST" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token or (user.csrf_token if user else '') }}">
+      <div class="admin-modal-body">
+        <div class="admin-form-group">
+          <label class="admin-form-label">Pozisyon Başlığı *</label>
+          <input type="text" name="title" id="edit_job_title" class="admin-form-input" required maxlength="120">
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">Şirket / Kurum Adı *</label>
+          <input type="text" name="company_name" id="edit_job_company" class="admin-form-input" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="admin-form-group">
+            <label class="admin-form-label">Lokasyon</label>
+            <input type="text" name="location" id="edit_job_location" class="admin-form-input">
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label">Çalışma Türü</label>
+            <input type="text" name="employment_type" id="edit_job_type" class="admin-form-input">
+          </div>
+        </div>
+        <div class="admin-form-group">
+          <label class="admin-form-label">İlan Açıklaması</label>
+          <textarea name="description" id="edit_job_desc" class="admin-form-textarea" rows="4"></textarea>
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('editJobModal')">İptal</button>
+        <button type="submit" class="btn btn-primary">Değişiklikleri Kaydet</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Delete Job -->
+<div class="admin-modal-backdrop" id="deleteJobModal">
+  <div class="admin-modal">
+    <div class="admin-modal-header" style="background: rgba(255, 59, 48, 0.06);">
+      <h3 class="admin-modal-title" style="color: var(--error, #ff3b30);">İş İlanını Sil</h3>
+      <button type="button" class="admin-modal-close" onclick="closeModal('deleteJobModal')">&times;</button>
+    </div>
+    <form id="deleteJobForm" method="POST" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token or (user.csrf_token if user else '') }}">
+      <div class="admin-modal-body">
+        <p style="font-size: 0.875rem; color: var(--graphite); line-height: 1.5;">
+          <strong id="delete_job_title"></strong> ilanını ve bu ilana ait tüm başvuruları silmek istediğinizden emin misiniz?
+        </p>
+      </div>
+      <div class="admin-modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('deleteJobModal')">İptal</button>
+        <button type="submit" class="btn" style="background: var(--error, #ff3b30); color: #ffffff; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer;">
+          Evet, İlanı Sil
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function openEditJobModal(id, title, company, location, type, desc) {
+    document.getElementById('editJobForm').action = '/admin/jobs/' + id + '/edit';
+    document.getElementById('edit_job_title').value = title;
+    document.getElementById('edit_job_company').value = company;
+    document.getElementById('edit_job_location').value = location;
+    document.getElementById('edit_job_type').value = type;
+    document.getElementById('edit_job_desc').value = desc;
+    openModal('editJobModal');
+  }
+
+  function openDeleteJobModal(id, title) {
+    document.getElementById('deleteJobForm').action = '/admin/jobs/' + id + '/delete';
+    document.getElementById('delete_job_title').textContent = title;
+    openModal('deleteJobModal');
+  }
+</script>
+{% endblock %}

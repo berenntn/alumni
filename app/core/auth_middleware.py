@@ -34,6 +34,7 @@ logger = logging.getLogger("app.middleware.auth")
 # Specific GET route patterns that require an authenticated session
 PROTECTED_GET_PATTERNS: Sequence[Pattern] = (
     re.compile(r"^/dashboard(/.*)?$"),
+    re.compile(r"^/admin(/.*)?$"),
     re.compile(r"^/api/me(/.*)?$"),
     re.compile(r"^/api/admin(/.*)?$"),
     re.compile(r"^/applications(/.*)?$"),
@@ -199,6 +200,37 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                     secure=settings.session_cookie_secure,
                 )
             return response
+
+        # Enforce Admin Role Authorization for /admin* routes
+        is_admin_route = path.startswith("/admin") or path.startswith("/api/admin")
+        if request.state.user is not None and is_admin_route and request.state.user.get("role") != "admin":
+            logger.warning(
+                f"Forbidden access to '{path}' by user '{request.state.user.get('email')}' with role '{request.state.user.get('role')}'."
+            )
+            if is_json_preferred(request):
+                return JSONResponse(
+                    content={"detail": "Bu işlem için yetkiniz bulunmamaktadır."},
+                    status_code=status.HTTP_403_FORBIDDEN,
+                )
+            try:
+                from app.core.exceptions import templates
+                return templates.TemplateResponse(
+                    request=request,
+                    name="403.html",
+                    context={
+                        "app_name": settings.APP_NAME,
+                        "app_title_tr": settings.APP_TITLE_TR,
+                        "app_description": settings.APP_DESCRIPTION,
+                        "detail": "Bu sayfaya erişim yetkiniz bulunmamaktadır.",
+                        "user": request.state.user,
+                    },
+                    status_code=status.HTTP_403_FORBIDDEN,
+                )
+            except Exception:
+                return JSONResponse(
+                    content={"detail": "Bu işlem için yetkiniz bulunmamaktadır."},
+                    status_code=status.HTTP_403_FORBIDDEN,
+                )
 
         # 4. Proceed through middleware pipeline
         response = await call_next(request)

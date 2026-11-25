@@ -1,5 +1,6 @@
 """Business logic and services package."""
 
+from app.services.admin_service import AdminService
 from app.services.announcement_service import (
     AnnouncementService,
     create_announcement,
@@ -34,6 +35,7 @@ from app.services.user_service import (
 )
 
 __all__ = [
+    "AdminService",
     "AnnouncementService",
     "AuthService",
     "CalculatorService",
