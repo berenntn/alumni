@@ -75,7 +75,8 @@ def apply_job_page(request: Request, job_id: int):
     )
 
 
-from fastapi import Form
+from typing import Optional
+from fastapi import Form, status
 from sqlalchemy.exc import IntegrityError
 
 from app.models.application import ApplicationDB
@@ -85,9 +86,22 @@ from app.models.application import ApplicationDB
 def submit_job_application(
     request: Request,
     job_id: int,
-    user_id: int = Form(..., ge=1),
+    user_id: Optional[int] = Form(None),
 ):
-    """Save a job application to PostgreSQL."""
+    """Save a job application to PostgreSQL, bound to the authenticated user."""
+    current_user = getattr(request.state, "user", None)
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Oturum açmanız gerekiyor.",
+        )
+
+    # Admins can apply on behalf of a specific user; regular users apply as themselves
+    if current_user.get("role") == "admin" and user_id is not None:
+        effective_user_id = user_id
+    else:
+        effective_user_id = current_user.get("user_id")
+
     with get_db_session() as session:
         job = session.get(JobPostingDB, job_id)
 
@@ -107,7 +121,7 @@ def submit_job_application(
     try:
         with get_db_session() as session:
             application = ApplicationDB(
-                user_id=user_id,
+                user_id=effective_user_id,
                 job_posting_id=job_id,
                 status="pending",
             )
@@ -147,7 +161,20 @@ from app.models.user_db import UserDB
 
 @router.get("/applications")
 def list_applications_page(request: Request):
-    """Display job applications with job and applicant details."""
+    """Display job applications with job and applicant details (Admin restricted)."""
+    current_user = getattr(request.state, "user", None)
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Oturum açmanız gerekiyor.",
+        )
+
+    if current_user.get("role") != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu sayfayı görüntülemek için yönetici yetkisi gereklidir.",
+        )
+
     with get_db_session() as session:
         rows = session.execute(
             select(ApplicationDB, JobPostingDB, UserDB)

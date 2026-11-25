@@ -545,7 +545,7 @@ class TestLogin(unittest.TestCase):
 
     def test_cookie_authenticated_state_changing_requires_csrf(self):
         """Cookie-authenticated state-changing requests must be rejected without valid CSRF token."""
-        user = self._create_test_user(email="auth_csrf@alumni.istanbul.edu.tr")
+        user = self._create_test_user(email="auth_csrf@alumni.istanbul.edu.tr", role="admin")
         token = SessionService.create_session(user)
         session = SessionService.get_session(token)
         csrf_token = session["csrf_token"]

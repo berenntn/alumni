@@ -4,9 +4,11 @@ import unittest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from app.core.database import Base, get_engine
+from app.core.database import Base, get_db_session, get_engine
 from app.main import app
 from app.models.job_posting import JobPosting, JobPostingDB
+from app.models.user_db import UserDB
+from app.services.session_service import SessionService, clear_sessions
 from app.schemas.job_posting_schemas import (
     JobPostingCreateRequest,
     JobPostingPatchRequest,
@@ -24,7 +26,26 @@ class TestJobPostingValidation(unittest.TestCase):
         Base.metadata.create_all(bind=engine)
 
     def setUp(self):
+        with get_db_session() as db:
+            db.query(UserDB).filter(UserDB.email == "admin@alumni.test").delete()
+            admin = UserDB(
+                id=1,
+                name="Admin Test",
+                email="admin@alumni.test",
+                department="Bilgisayar",
+                graduation_year=2020,
+                role="admin",
+            )
+            db.merge(admin)
+            db.flush()
+        token = SessionService.create_session(admin)
         self.client = TestClient(app)
+        self.client.headers["Authorization"] = f"Bearer {token}"
+
+    def tearDown(self):
+        clear_sessions()
+        with get_db_session() as db:
+            db.query(UserDB).filter(UserDB.email == "admin@alumni.test").delete()
 
     # -------------------------------------------------------------------------
     # Pydantic Schema Validation Tests

@@ -139,14 +139,69 @@ async def get_web_users(request: Request):
     )
 
 
+def _check_web_user_permission(request: Request, target_user_id: int):
+    """Enforces that caller is either the user themselves or has admin role."""
+    current_user = getattr(request.state, "user", None)
+    if not current_user or (current_user.get("user_id") != target_user_id and current_user.get("role") != "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu profil üzerinde işlem yapma yetkiniz bulunmamaktadır.",
+        )
+
+
+def _check_web_announcement_permission(request: Request, announcement_id: int):
+    """Enforces that caller is either an admin or the author (academician)."""
+    current_user = getattr(request.state, "user", None)
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Oturum açmanız gerekiyor.",
+        )
+
+    user_role = current_user.get("role")
+    if user_role == "admin":
+        return
+
+    if user_role != "academician":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu duyuruyu değiştirme veya silme yetkiniz bulunmamaktadır.",
+        )
+
+    res = AnnouncementController.get_announcement(announcement_id)
+    if not res.get("success") or not res.get("announcement"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Duyuru bulunamadı (ID: {announcement_id}).",
+        )
+
+    ann = res["announcement"]
+    author_id = getattr(ann, "created_by", None)
+    if isinstance(ann, dict):
+        author_id = ann.get("created_by")
+
+    if author_id is None or author_id != current_user.get("user_id"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu duyuruyu değiştirme veya silme yetkiniz bulunmamaktadır.",
+        )
+
+
 @web_router.post(
     "/users",
     response_class=HTMLResponse,
     summary="Web Create User via View Form",
-    description="Processes user creation from the HTML View form and returns the updated users list View.",
+    description="Processes user creation from the HTML View form and returns the updated users list View (Admin only).",
 )
 async def create_web_user(request: Request):
-    """Web route creating a user from form data via UserController and returning the View."""
+    """Web route creating a user from form data via UserController (Admin only)."""
+    current_user = getattr(request.state, "user", None)
+    if not current_user or current_user.get("role") != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Yalnızca yöneticiler doğrudan kullanıcı oluşturabilir.",
+        )
+
     raw_data = await _extract_form_data(request)
 
     # Cast graduation_year to integer if provided as numeric string
@@ -247,6 +302,7 @@ async def get_web_user(request: Request, id: int):
 )
 async def get_web_user_edit_form(request: Request, id: int):
     """Web route rendering edit user form pre-filled via UserController."""
+    _check_web_user_permission(request, id)
     res = UserController.get_user(id)
 
     if res.get("success"):
@@ -291,6 +347,7 @@ async def get_web_user_edit_form(request: Request, id: int):
 )
 async def update_web_user_form(request: Request, id: int):
     """Web route handling browser form POST for user updates."""
+    _check_web_user_permission(request, id)
     raw_data = await _extract_form_data(request)
 
     if "graduation_year" in raw_data and raw_data["graduation_year"] != "":
@@ -361,6 +418,7 @@ async def update_web_user_form(request: Request, id: int):
 )
 async def update_web_user(request: Request, id: int):
     """Web route updating a user via UserController (PUT)."""
+    _check_web_user_permission(request, id)
     raw_data = await _extract_form_data(request)
 
     if "graduation_year" in raw_data and raw_data["graduation_year"] != "":
@@ -413,6 +471,7 @@ async def update_web_user(request: Request, id: int):
 )
 async def delete_web_user_form(request: Request, id: int):
     """Web route handling browser form POST for user deletion."""
+    _check_web_user_permission(request, id)
     del_res = UserController.delete_user(id)
     user_context = UserController.get_users()
 
@@ -455,6 +514,7 @@ async def delete_web_user_form(request: Request, id: int):
 )
 async def delete_web_user(request: Request, id: int):
     """Web route deleting a user via UserController (DELETE)."""
+    _check_web_user_permission(request, id)
     del_res = UserController.delete_user(id)
 
     if _is_json_requested(request) or not request.headers.get("accept", "").startswith("text/html"):
@@ -540,6 +600,20 @@ async def get_web_announcements(request: Request):
 )
 async def create_web_announcement(request: Request):
     """Web route creating an announcement via AnnouncementController."""
+    current_user = getattr(request.state, "user", None)
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Oturum açmanız gerekiyor.",
+        )
+
+    user_role = current_user.get("role")
+    if user_role not in ("admin", "academician"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Duyuru oluşturma yetkiniz bulunmamaktadır. Yalnızca yönetici veya akademisyenler duyuru yayınlayabilir.",
+        )
+
     raw_data = await _extract_form_data(request)
     if "created_by" in raw_data and raw_data["created_by"] is not None and raw_data["created_by"] != "":
         try:
@@ -548,6 +622,9 @@ async def create_web_announcement(request: Request):
             pass
     elif "created_by" in raw_data and raw_data["created_by"] == "":
         raw_data["created_by"] = None
+
+    if user_role != "admin" or not raw_data.get("created_by"):
+        raw_data["created_by"] = current_user.get("user_id")
 
     create_res = AnnouncementController.create_announcement(raw_data)
 
@@ -639,6 +716,7 @@ async def get_web_announcement(request: Request, id: int):
 )
 async def get_web_announcement_edit_form(request: Request, id: int):
     """Web route rendering edit announcement form pre-filled via AnnouncementController."""
+    _check_web_announcement_permission(request, id)
     res = AnnouncementController.get_announcement(id)
     if res.get("success"):
         return templates.TemplateResponse(
@@ -682,14 +760,16 @@ async def get_web_announcement_edit_form(request: Request, id: int):
 )
 async def update_web_announcement_form(request: Request, id: int):
     """Web route handling browser form POST for announcement updates."""
+    _check_web_announcement_permission(request, id)
     raw_data = await _extract_form_data(request)
     if "created_by" in raw_data and raw_data["created_by"] is not None and raw_data["created_by"] != "":
         try:
             raw_data["created_by"] = int(raw_data["created_by"])
         except (ValueError, TypeError):
             pass
-    elif "created_by" in raw_data and raw_data["created_by"] == "":
-        raw_data["created_by"] = None
+    current_user = getattr(request.state, "user", {}) or {}
+    if current_user.get("role") != "admin":
+        raw_data.pop("created_by", None)
 
     update_res = AnnouncementController.update_announcement(id, raw_data)
 
@@ -749,14 +829,16 @@ async def update_web_announcement_form(request: Request, id: int):
 )
 async def update_web_announcement(id: int, request: Request):
     """Web route updating an announcement via AnnouncementController (PUT)."""
+    _check_web_announcement_permission(request, id)
     raw_data = await _extract_form_data(request)
     if "created_by" in raw_data and raw_data["created_by"] is not None and raw_data["created_by"] != "":
         try:
             raw_data["created_by"] = int(raw_data["created_by"])
         except (ValueError, TypeError):
             pass
-    elif "created_by" in raw_data and raw_data["created_by"] == "":
-        raw_data["created_by"] = None
+    current_user = getattr(request.state, "user", {}) or {}
+    if current_user.get("role") != "admin":
+        raw_data.pop("created_by", None)
 
     res = AnnouncementController.update_announcement(id, raw_data)
 
@@ -802,6 +884,7 @@ async def update_web_announcement(id: int, request: Request):
 )
 async def delete_web_announcement_form(request: Request, id: int):
     """Web route handling browser form POST for announcement deletion."""
+    _check_web_announcement_permission(request, id)
     del_res = AnnouncementController.delete_announcement(id)
     announcements_context = AnnouncementController.get_announcements()
 
@@ -844,6 +927,7 @@ async def delete_web_announcement_form(request: Request, id: int):
 )
 async def delete_web_announcement(request: Request, id: int):
     """Web route deleting an announcement via AnnouncementController (DELETE)."""
+    _check_web_announcement_permission(request, id)
     del_res = AnnouncementController.delete_announcement(id)
 
     if _is_html_requested(request):

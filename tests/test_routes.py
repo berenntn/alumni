@@ -7,23 +7,45 @@ import urllib.parse
 from typing import Any, Dict, Optional, Tuple
 
 from app.controllers.user_controller import UserController
+from app.core.database import get_db_session
 from app.main import app
+from app.models.user_db import UserDB
 from app.services.announcement_service import clear_announcements
+from app.services.session_service import SessionService, clear_sessions
 from app.services.user_service import clear_users
 
 
 class TestRoutes(unittest.TestCase):
     """Test suite verifying route-to-controller integration, View layer CRUD, and HTTP endpoints."""
 
+    _default_token: Optional[str] = None
+
     def setUp(self):
         """Reset the in-memory user and announcement stores before each test."""
         clear_users()
         clear_announcements()
+        clear_sessions()
+        with get_db_session() as db:
+            db.query(UserDB).filter(UserDB.email == "admin@alumni.test").delete()
+            admin = UserDB(
+                id=1,
+                name="Admin Test",
+                email="admin@alumni.test",
+                department="Bilgisayar",
+                graduation_year=2020,
+                role="admin",
+            )
+            db.merge(admin)
+            db.flush()
+        TestRoutes._default_token = SessionService.create_session(admin)
 
     def tearDown(self):
         """Clean up in-memory user and announcement stores after each test."""
         clear_users()
         clear_announcements()
+        clear_sessions()
+        with get_db_session() as db:
+            db.query(UserDB).filter(UserDB.email == "admin@alumni.test").delete()
 
     @staticmethod
     def _run_request(
@@ -36,6 +58,10 @@ class TestRoutes(unittest.TestCase):
 
         async def _asgi_call():
             req_headers = dict(headers or {})
+            if "cookie" not in req_headers and "authorization" not in req_headers:
+                default_tok = getattr(TestRoutes, "_default_token", None)
+                if default_tok:
+                    req_headers["authorization"] = f"Bearer {default_tok}"
             body_bytes = b""
 
             if body is not None:

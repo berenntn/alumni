@@ -164,7 +164,10 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
         # 3. Synchronizer CSRF Token Validation for Cookie-Authenticated Requests
         session_cookie = request.cookies.get(settings.SESSION_COOKIE_NAME)
         if session_cookie:
-            active_session = SessionService.get_session(session_cookie)
+            active_session = getattr(request.state, "user", None)
+            if not active_session:
+                active_session = SessionService.get_session(session_cookie)
+
             if active_session:
                 expected_csrf = active_session.get("csrf_token")
                 if not submitted_csrf or not validate_session_csrf_token(submitted_csrf, expected_csrf):

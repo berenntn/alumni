@@ -5,13 +5,35 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from app.core.database import get_db_session
 from app.main import app
+from app.models.user_db import UserDB
+from app.services.session_service import SessionService, clear_sessions
 
 
 class TestApplicationRoutes(unittest.TestCase):
 
     def setUp(self):
+        with get_db_session() as db:
+            db.query(UserDB).filter(UserDB.email == "admin@alumni.test").delete()
+            admin = UserDB(
+                id=1,
+                name="Admin Test",
+                email="admin@alumni.test",
+                department="Bilgisayar",
+                graduation_year=2020,
+                role="admin",
+            )
+            db.merge(admin)
+            db.flush()
+        token = SessionService.create_session(admin)
         self.client = TestClient(app)
+        self.client.headers["Authorization"] = f"Bearer {token}"
+
+    def tearDown(self):
+        clear_sessions()
+        with get_db_session() as db:
+            db.query(UserDB).filter(UserDB.email == "admin@alumni.test").delete()
 
     def test_application_routes_registered(self):
         routes = {

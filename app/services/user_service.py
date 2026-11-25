@@ -132,9 +132,9 @@ class UserService:
 
         updates: dict = {}
         if isinstance(user_or_name, User):
-            updates = user_or_name.model_dump(exclude_unset=True, exclude={"id"})
+            updates = user_or_name.model_dump(exclude_unset=True, exclude={"id", "role"})
         elif isinstance(user_or_name, dict):
-            updates = {k: v for k, v in user_or_name.items() if k != "id" and v is not None}
+            updates = {k: v for k, v in user_or_name.items() if k not in ("id", "role") and v is not None}
         else:
             resolved_name = name if name is not None else user_or_name
             if resolved_name is not None:
@@ -146,7 +146,7 @@ class UserService:
             if graduation_year is not None:
                 updates["graduation_year"] = graduation_year
             for k, v in kwargs.items():
-                if k != "id" and v is not None:
+                if k not in ("id", "role") and v is not None:
                     updates[k] = v
 
         updated_data = existing_user.model_dump()

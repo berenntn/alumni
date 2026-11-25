@@ -1,9 +1,10 @@
 """REST API routes for Job Postings management."""
 
-from fastapi import APIRouter, HTTPException, Path as PathParam, status
+from fastapi import APIRouter, Depends, HTTPException, Path as PathParam, status
 from sqlalchemy import select
 
 from app.core.database import get_db_session
+from app.core.dependencies import require_role
 from app.models.job_posting import JobPostingDB
 from app.schemas.job_posting_schemas import (
     JobPostingCreateRequest,
@@ -68,12 +69,14 @@ def list_job_postings():
     status_code=status.HTTP_201_CREATED,
     summary="Create Job Posting",
     description="Creates a new job posting with validation (title max 120 chars, company required).",
+    dependencies=[Depends(require_role("admin"))],
 )
 @router.post(
     "/",
     response_model=JobPostingApiResponse,
     status_code=status.HTTP_201_CREATED,
     include_in_schema=False,
+    dependencies=[Depends(require_role("admin"))],
 )
 def create_job_posting(payload: JobPostingCreateRequest):
     """Create a new job posting in PostgreSQL."""
@@ -130,6 +133,7 @@ def get_job_posting(
     response_model=JobPostingApiResponse,
     summary="Full Update Job Posting",
     description="Fully updates an existing job posting.",
+    dependencies=[Depends(require_role("admin"))],
 )
 def update_job_posting(
     payload: JobPostingUpdateRequest,
@@ -167,6 +171,7 @@ def update_job_posting(
     response_model=JobPostingApiResponse,
     summary="Partial Update Job Posting",
     description="Partially updates specified fields of an existing job posting.",
+    dependencies=[Depends(require_role("admin"))],
 )
 def patch_job_posting(
     payload: JobPostingPatchRequest,
@@ -205,6 +210,7 @@ def patch_job_posting(
     response_model=JobPostingDeleteApiResponse,
     summary="Delete Job Posting",
     description="Deletes a job posting from PostgreSQL.",
+    dependencies=[Depends(require_role("admin"))],
 )
 def delete_job_posting(
     id: int = PathParam(..., description="Unique integer ID of the job posting", examples=[1]),

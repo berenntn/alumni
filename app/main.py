@@ -22,6 +22,7 @@ from app.api.job_web_routes import router as job_web_router
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.middleware import RequestLoggingMiddleware
+from app.core.auth_middleware import AuthenticationMiddleware
 from app.core.csrf_middleware import CSRFProtectionMiddleware
 from app.core.exceptions import register_exception_handlers
 
@@ -57,8 +58,9 @@ app = FastAPI(
     ],
 )
 
-# Register HTTP request logging and CSRF protection middlewares
+# Register HTTP request logging, authentication, and CSRF protection middlewares
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(AuthenticationMiddleware)
 app.add_middleware(CSRFProtectionMiddleware)
 
 # Register custom exception handlers (Custom 404 HTML/JSON & Safe 5xx handler)
