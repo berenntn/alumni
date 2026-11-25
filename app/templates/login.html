@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Giriş Yap | {{ app_title_tr }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .login-section {
+    padding: 3.5rem 1.5rem 6rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .login-header {
+    text-align: center;
+    max-width: 580px;
+    margin-bottom: 2.5rem;
+  }
+
+  .login-badge {
+    display: inline-block;
+    padding: 0.35rem 0.9rem;
+    font-size: var(--font-size-caption-1);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--apple-blue);
+    background-color: rgba(0, 113, 227, 0.08);
+    border-radius: var(--radius-pill);
+    margin-bottom: 1rem;
+  }
+
+  .login-title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-large-title);
+    font-weight: 700;
+    color: var(--carbon);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.75rem;
+  }
+
+  .login-card {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-sm);
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 480px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .roadmap-alert {
+    background-color: var(--ice);
+    border: 1px solid rgba(0, 113, 227, 0.2);
+    border-radius: var(--radius-card);
+    padding: 1.25rem;
+    color: var(--carbon);
+    font-size: var(--font-size-footnote);
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .roadmap-alert-title {
+    font-weight: 700;
+    color: var(--apple-blue);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: var(--font-size-subhead);
+  }
+
+  .form-group-dummy {
+    opacity: 0.65;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="login-section">
+  <div class="login-header">
+    <span class="login-badge">Kullanıcı Girişi</span>
+    <h1 class="login-title">Mezun Portalı</h1>
+    <p style="color: var(--graphite); font-size: var(--font-size-body); line-height: 1.5;">
+      İstanbul Üniversitesi Mezun Takip Sistemi kimlik doğrulama kapısı.
+    </p>
+  </div>
+
+  <div class="login-card">
+    <div class="roadmap-alert">
+      <div class="roadmap-alert-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        Aşama 3 Geliştirme Bildirimi
+      </div>
+      <div>
+        Sistem yol haritamız doğrultusunda, <strong>JWT tabanlı güvenli oturum açma ve giriş (login)</strong> mekanizmaları <strong>Aşama 3</strong> kapsamında geliştirilmektedir.
+      </div>
+      <div style="color: var(--ash); font-size: var(--font-size-caption-1);">
+        Kayıt işlemini tamamladıysanız kullanıcı hesabınız PostgreSQL veri tabanına ve mezun rehberine kaydedilmiştir.
+      </div>
+    </div>
+
+    <!-- Informational Disabled Form Placeholder -->
+    <div style="display: flex; flex-direction: column; gap: 1rem;" class="form-group-dummy">
+      <div class="form-group">
+        <label for="dummy_email" style="font-size: var(--font-size-footnote); font-weight: 600; color: var(--carbon);">E-posta</label>
+        <input type="email" id="dummy_email" class="form-input" placeholder="ornek@alumni.istanbul.edu.tr" disabled>
+      </div>
+      <div class="form-group">
+        <label for="dummy_pwd" style="font-size: var(--font-size-footnote); font-weight: 600; color: var(--carbon);">Şifre</label>
+        <input type="password" id="dummy_pwd" class="form-input" placeholder="••••••••" disabled>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
+      <a href="/register" class="btn btn-primary btn-pill" style="display: flex; justify-content: center; align-items: center; padding: 0.75rem 1.5rem; text-decoration: none;">
+        Yeni Mezun Kaydı Oluştur &rarr;
+      </a>
+      <a href="/" class="btn btn-secondary btn-pill" style="display: flex; justify-content: center; align-items: center; padding: 0.75rem 1.5rem; text-decoration: none;">
+        Ana Sayfaya Dön
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

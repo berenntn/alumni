@@ -18,6 +18,8 @@ class UserDB(Base):
     email = Column(String(255), nullable=False, unique=True)
     department = Column(String(255), nullable=False)
     graduation_year = Column(Integer, nullable=False)
+    hashed_password = Column(String(255), nullable=True)
+    role = Column(String(50), nullable=False, default="alumnus")
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     announcements = relationship(

@@ -9,6 +9,10 @@ from app.services.announcement_service import (
     delete_announcement,
 )
 from app.services.calculator_service import CalculatorService
+from app.services.registration_service import (
+    RegistrationService,
+    register_user,
+)
 from app.services.user_service import (
     UserService,
     create_user,
@@ -21,9 +25,11 @@ from app.services.user_service import (
 __all__ = [
     "AnnouncementService",
     "CalculatorService",
+    "RegistrationService",
     "UserService",
     "create_announcement",
     "create_user",
+    "register_user",
     "delete_announcement",
     "delete_user",
     "get_announcement",

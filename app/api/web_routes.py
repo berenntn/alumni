@@ -12,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 from app.core.config import settings
 from app.controllers.announcement_controller import AnnouncementController
 from app.controllers.user_controller import UserController
+from app.services.registration_service import RegistrationService
 
 web_router = APIRouter(tags=["Web Pages"])
 
@@ -878,3 +879,131 @@ async def delete_web_announcement(request: Request, id: int):
     return JSONResponse(content=jsonable_encoder(del_res), status_code=status_code)
 
 
+# --------------------------------------------------------------------------
+# User Registration & Login Landing Routes
+# --------------------------------------------------------------------------
+
+@web_router.get("/register", response_class=HTMLResponse)
+async def get_register_page(request: Request):
+    """Renders the alumni user registration page."""
+    return templates.TemplateResponse(
+        request=request,
+        name="register.html",
+        context={
+            "app_name": settings.APP_NAME,
+            "app_title_tr": settings.APP_TITLE_TR,
+            "app_description": settings.APP_DESCRIPTION,
+            "app_version": settings.APP_VERSION,
+            "form_data": {},
+            "error_message": None,
+            "success_message": None,
+            "registered_user": None,
+        },
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@web_router.post("/register")
+async def post_register_page(request: Request):
+    """Handles alumni user registration form submissions and JSON requests."""
+    form_data = await _extract_form_data(request)
+
+    try:
+        registered = RegistrationService.register_user(form_data)
+        if _is_json_requested(request):
+            return JSONResponse(
+                content={
+                    "status": "success",
+                    "message": "Kullanıcı kaydı başarıyla oluşturuldu.",
+                    "data": registered,
+                },
+                status_code=status.HTTP_201_CREATED,
+            )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="register.html",
+            context={
+                "app_name": settings.APP_NAME,
+                "app_title_tr": settings.APP_TITLE_TR,
+                "app_description": settings.APP_DESCRIPTION,
+                "app_version": settings.APP_VERSION,
+                "form_data": {},
+                "error_message": None,
+                "success_message": "Kaydınız başarıyla tamamlandı! Giriş yapabilirsiniz.",
+                "registered_user": registered,
+            },
+            status_code=status.HTTP_200_OK,
+        )
+    except ValueError as e:
+        err_msg = str(e)
+        if _is_json_requested(request):
+            return JSONResponse(
+                content={
+                    "status": "error",
+                    "message": err_msg,
+                },
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        preserved = {
+            "name": form_data.get("name", ""),
+            "email": form_data.get("email", ""),
+            "department": form_data.get("department", ""),
+            "graduation_year": form_data.get("graduation_year", ""),
+        }
+        return templates.TemplateResponse(
+            request=request,
+            name="register.html",
+            context={
+                "app_name": settings.APP_NAME,
+                "app_title_tr": settings.APP_TITLE_TR,
+                "app_description": settings.APP_DESCRIPTION,
+                "app_version": settings.APP_VERSION,
+                "form_data": preserved,
+                "error_message": err_msg,
+                "success_message": None,
+                "registered_user": None,
+            },
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+@web_router.post("/api/register")
+async def api_register_user(request: Request):
+    """REST API registration endpoint accepting JSON payload."""
+    form_data = await _extract_form_data(request)
+    try:
+        registered = RegistrationService.register_user(form_data)
+        return JSONResponse(
+            content={
+                "status": "success",
+                "message": "Kullanıcı kaydı başarıyla oluşturuldu.",
+                "data": registered,
+            },
+            status_code=status.HTTP_201_CREATED,
+        )
+    except ValueError as e:
+        return JSONResponse(
+            content={
+                "status": "error",
+                "message": str(e),
+            },
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+@web_router.get("/login", response_class=HTMLResponse)
+async def get_login_page(request: Request):
+    """Renders the informational login page clarifying Phase 3 roadmap status."""
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={
+            "app_name": settings.APP_NAME,
+            "app_title_tr": settings.APP_TITLE_TR,
+            "app_description": settings.APP_DESCRIPTION,
+            "app_version": settings.APP_VERSION,
+        },
+        status_code=status.HTTP_200_OK,
+    )

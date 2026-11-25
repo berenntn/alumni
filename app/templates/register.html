@@ -1,0 +1,536 @@
+{% extends "base.html" %}
+
+{% block title %}Kayıt Ol | {{ app_title_tr }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .register-section {
+    padding: 3rem 1.5rem 5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .register-header {
+    text-align: center;
+    max-width: 620px;
+    margin-bottom: 2.5rem;
+  }
+
+  .register-badge {
+    display: inline-block;
+    padding: 0.35rem 0.9rem;
+    font-size: var(--font-size-caption-1);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--apple-blue);
+    background-color: rgba(0, 113, 227, 0.08);
+    border-radius: var(--radius-pill);
+    margin-bottom: 1rem;
+  }
+
+  .register-title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-large-title);
+    font-weight: 700;
+    color: var(--carbon);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.75rem;
+  }
+
+  .register-subtitle {
+    font-size: var(--font-size-body);
+    color: var(--graphite);
+    line-height: 1.5;
+  }
+
+  .register-card {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-sm);
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 580px;
+    box-sizing: border-box;
+  }
+
+  .form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 600px) {
+    .form-row-2 {
+      grid-template-columns: 1fr;
+    }
+    .register-card {
+      padding: 1.75rem 1.25rem;
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .form-group label {
+    font-size: var(--font-size-footnote);
+    font-weight: 600;
+    color: var(--carbon);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .form-group label span.req {
+    color: var(--error);
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-input);
+    font-family: inherit;
+    font-size: var(--font-size-subhead);
+    color: var(--carbon);
+    background-color: #ffffff;
+    transition: var(--transition);
+    box-sizing: border-box;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--apple-blue);
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.18);
+  }
+
+  .form-input.is-invalid {
+    border-color: var(--error);
+    box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.15);
+  }
+
+  .field-hint {
+    font-size: var(--font-size-caption-2);
+    color: var(--mist);
+  }
+
+  .field-error {
+    font-size: var(--font-size-caption-2);
+    color: var(--error);
+    display: none;
+  }
+
+  .field-error.visible {
+    display: block;
+  }
+
+  .register-actions {
+    margin-top: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .btn-block {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.85rem 1.5rem;
+    font-size: var(--font-size-subhead);
+    font-weight: 600;
+  }
+
+  .login-redirect {
+    text-align: center;
+    font-size: var(--font-size-footnote);
+    color: var(--graphite);
+  }
+
+  .login-redirect a {
+    color: var(--apple-blue);
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .login-redirect a:hover {
+    text-decoration: underline;
+  }
+
+  /* Success Card Layout */
+  .success-box {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .success-icon {
+    width: 64px;
+    height: 64px;
+    background-color: rgba(52, 199, 89, 0.12);
+    color: var(--color-success);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .user-summary-card {
+    background-color: var(--frost);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-card);
+    padding: 1.25rem 1.5rem;
+    width: 100%;
+    text-align: left;
+    box-sizing: border-box;
+    font-size: var(--font-size-footnote);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: 0.35rem;
+  }
+
+  .summary-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .summary-label {
+    color: var(--ash);
+    font-weight: 500;
+  }
+
+  .summary-value {
+    color: var(--carbon);
+    font-weight: 600;
+  }
+
+  .phase-note {
+    font-size: var(--font-size-caption-1);
+    color: var(--mist);
+    line-height: 1.4;
+    text-align: center;
+    background-color: var(--ice);
+    border: 1px solid rgba(41, 151, 255, 0.2);
+    border-radius: var(--radius-card);
+    padding: 0.75rem 1rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="register-section">
+  <div class="register-header">
+    <span class="register-badge">İstanbul Üniversitesi Mezun Ağı</span>
+    <h1 class="register-title">Aramıza Katılın</h1>
+    <p class="register-subtitle">
+      İstanbul Üniversitesi mezunlar platformuna üye olarak iş ilanlarını takip edebilir, mezun topluluğumuzla bağlantı kurabilir ve üniversitemizden güncel duyuruları alabilirsiniz.
+    </p>
+  </div>
+
+  <div class="register-card">
+    {% if success_message %}
+      <!-- Registration Success View -->
+      <div class="success-box">
+        <div class="success-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <h2 style="font-size: var(--font-size-title-2); font-weight: 700; color: var(--carbon); margin: 0;">
+          Kaydınız Başarıyla Tamamlandı!
+        </h2>
+        <p style="color: var(--graphite); font-size: var(--font-size-subhead); margin: 0;">
+          {{ success_message }}
+        </p>
+
+        {% if registered_user %}
+        <div class="user-summary-card">
+          <div class="summary-row">
+            <span class="summary-label">Ad Soyad</span>
+            <span class="summary-value">{{ registered_user.name }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">E-posta</span>
+            <span class="summary-value">{{ registered_user.email }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Bölüm</span>
+            <span class="summary-value">{{ registered_user.department }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Mezuniyet Yılı</span>
+            <span class="summary-value">{{ registered_user.graduation_year }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Kullanıcı Rolü</span>
+            <span class="summary-value">{{ registered_user.role|capitalize }}</span>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="phase-note">
+          <strong>Bilgi:</strong> Hesabınız PostgreSQL veri tabanına başarıyla işlenmiştir. Kullanıcı oturum açma (login/auth) mekanizması sistem yol haritası Aşama 3 kapsamında geliştirilmektedir.
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; width: 100%; margin-top: 0.5rem; flex-wrap: wrap;">
+          <a href="/login" class="btn btn-primary btn-pill btn-block" style="flex: 1; min-width: 140px;">
+            Giriş Sayfasına Git &rarr;
+          </a>
+          <a href="/" class="btn btn-secondary btn-pill btn-block" style="flex: 1; min-width: 140px;">
+            Ana Sayfaya Dön
+          </a>
+        </div>
+      </div>
+
+    {% else %}
+      <!-- Registration Form View -->
+      {% if error_message %}
+      <div class="alert alert-error" role="alert">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>{{ error_message }}</span>
+      </div>
+      {% endif %}
+
+      <form action="/register" method="POST" id="registerForm" novalidate>
+        <div class="form-grid">
+          <!-- Full Name -->
+          <div class="form-group">
+            <label for="name">
+              Tam Adı Soyadı <span class="req">*</span>
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              class="form-input"
+              value="{{ form_data.name if form_data else '' }}"
+              placeholder="Örn: Ayşe Yılmaz"
+              required
+            >
+            <span class="field-error" id="nameError">Lütfen adınızı ve soyadınızı giriniz.</span>
+          </div>
+
+          <!-- Email Address -->
+          <div class="form-group">
+            <label for="email">
+              E-posta Adresi <span class="req">*</span>
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              class="form-input"
+              value="{{ form_data.email if form_data else '' }}"
+              placeholder="ornek@alumni.istanbul.edu.tr"
+              required
+            >
+            <span class="field-error" id="emailError">Geçerli bir e-posta adresi giriniz.</span>
+          </div>
+
+          <!-- Department & Graduation Year (2 Columns) -->
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="department">
+                Bölüm <span class="req">*</span>
+              </label>
+              <input
+                type="text"
+                id="department"
+                name="department"
+                class="form-input"
+                value="{{ form_data.department if form_data else '' }}"
+                placeholder="Örn: Bilgisayar Mühendisliği"
+                required
+              >
+              <span class="field-error" id="deptError">Lütfen bölümünüzü belirtiniz.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="graduation_year">
+                Mezuniyet Yılı <span class="req">*</span>
+              </label>
+              <input
+                type="number"
+                id="graduation_year"
+                name="graduation_year"
+                class="form-input"
+                value="{{ form_data.graduation_year if form_data else '' }}"
+                min="1900"
+                max="2100"
+                placeholder="Örn: 2024"
+                required
+              >
+              <span class="field-error" id="yearError">1900 - 2100 arasında bir yıl giriniz.</span>
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="form-group">
+            <label for="password">
+              Şifre <span class="req">*</span>
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-input"
+              placeholder="En az 8 karakter"
+              minlength="8"
+              required
+            >
+            <span class="field-hint">Şifreniz en az 8 karakterden oluşmalıdır.</span>
+            <span class="field-error" id="passwordError">Şifre en az 8 karakter uzunluğunda olmalıdır.</span>
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="form-group">
+            <label for="confirm_password">
+              Şifre Tekrarı <span class="req">*</span>
+            </label>
+            <input
+              type="password"
+              id="confirm_password"
+              name="confirm_password"
+              class="form-input"
+              placeholder="Şifrenizi doğrulayın"
+              minlength="8"
+              required
+            >
+            <span class="field-error" id="confirmPasswordError">Girdiğiniz şifreler eşleşmiyor.</span>
+          </div>
+        </div>
+
+        <div class="register-actions">
+          <button type="submit" class="btn btn-primary btn-pill btn-block" id="submitBtn">
+            Kayıt Ol
+          </button>
+          <div class="login-redirect">
+            Zaten bir hesabınız var mı? <a href="/login">Giriş Yap</a>
+          </div>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (function() {
+    const form = document.getElementById('registerForm');
+    if (!form) return;
+
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const deptInput = document.getElementById('department');
+    const yearInput = document.getElementById('graduation_year');
+    const pwdInput = document.getElementById('password');
+    const confirmPwdInput = document.getElementById('confirm_password');
+
+    const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+
+    function setFieldValidity(input, errorElementId, isValid) {
+      const err = document.getElementById(errorElementId);
+      if (!isValid) {
+        input.classList.add('is-invalid');
+        if (err) err.classList.add('visible');
+      } else {
+        input.classList.remove('is-invalid');
+        if (err) err.classList.remove('visible');
+      }
+      return isValid;
+    }
+
+    // Real-time password match validator
+    if (confirmPwdInput && pwdInput) {
+      confirmPwdInput.addEventListener('input', function() {
+        if (confirmPwdInput.value) {
+          setFieldValidity(confirmPwdInput, 'confirmPasswordError', confirmPwdInput.value === pwdInput.value);
+        }
+      });
+      pwdInput.addEventListener('input', function() {
+        if (pwdInput.value) {
+          setFieldValidity(pwdInput, 'passwordError', pwdInput.value.length >= 8);
+        }
+        if (confirmPwdInput.value) {
+          setFieldValidity(confirmPwdInput, 'confirmPasswordError', confirmPwdInput.value === pwdInput.value);
+        }
+      });
+    }
+
+    form.addEventListener('submit', function(e) {
+      let isFormValid = true;
+
+      // Validate name
+      const nameVal = nameInput.value.trim();
+      if (!setFieldValidity(nameInput, 'nameError', nameVal.length > 0)) {
+        isFormValid = false;
+      }
+
+      // Validate email
+      const emailVal = emailInput.value.trim();
+      if (!setFieldValidity(emailInput, 'emailError', emailRegex.test(emailVal))) {
+        isFormValid = false;
+      }
+
+      // Validate department
+      const deptVal = deptInput.value.trim();
+      if (!setFieldValidity(deptInput, 'deptError', deptVal.length > 0)) {
+        isFormValid = false;
+      }
+
+      // Validate graduation year
+      const yearVal = parseInt(yearInput.value, 10);
+      const isYearValid = !isNaN(yearVal) && yearVal >= 1900 && yearVal <= 2100;
+      if (!setFieldValidity(yearInput, 'yearError', isYearValid)) {
+        isFormValid = false;
+      }
+
+      // Validate password
+      const pwdVal = pwdInput.value;
+      if (!setFieldValidity(pwdInput, 'passwordError', pwdVal.length >= 8)) {
+        isFormValid = false;
+      }
+
+      // Validate confirm password
+      const confirmVal = confirmPwdInput.value;
+      const isMatch = (pwdVal === confirmVal && confirmVal.length >= 8);
+      if (!setFieldValidity(confirmPwdInput, 'confirmPasswordError', isMatch)) {
+        isFormValid = false;
+      }
+
+      if (!isFormValid) {
+        e.preventDefault();
+      }
+    });
+  })();
+</script>
+{% endblock %}

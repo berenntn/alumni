@@ -20,3 +20,4 @@ class User(BaseModel):
     email: str = Field(..., description="Kullanıcı e-posta adresi")
     department: str = Field(..., description="Mezun olunan veya kayıtlı olunan bölüm")
     graduation_year: int = Field(..., description="Mezuniyet yılı", ge=1900, le=2100)
+    role: Optional[str] = Field(default="alumnus", description="Kullanıcı rolü")

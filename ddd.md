@@ -276,6 +276,8 @@ Relational table representing registered alumni users. Defined in [`app/models/u
 | `email` | `VARCHAR(255)` | `NOT NULL, UNIQUE` | Unique email address |
 | `department` | `VARCHAR(255)` | `NOT NULL` | Graduated department |
 | `graduation_year` | `INTEGER` | `NOT NULL` | Year of graduation |
+| `hashed_password` | `VARCHAR(255)` | `NULLABLE` | Secure PBKDF2-HMAC-SHA256 password hash |
+| `role` | `VARCHAR(50)` | `NOT NULL, default='alumnus'` | System authorization role |
 | `created_at` | `TIMESTAMP` | `NOT NULL, default=datetime.utcnow` | Record creation timestamp |
 
 ### 7.2. `announcements` Table
@@ -411,3 +413,5 @@ Database schema evolution is tracked and applied through Alembic migrations (`al
    Created the `users` table with `id`, `name`, `email` (unique), `department`, `graduation_year`, and `created_at`. Established foreign key link `announcements.created_by -> users.id` with `ON DELETE SET NULL`.
 4. **`9aa14a4442a2` (`create_applications_table`):**
    Created the `applications` table establishing the relational link between `users` (`user_id`) and `job_postings` (`job_posting_id`), with default status `pending`.
+5. **`c1f4e92a8b3d` (`add_hashed_password_and_role_to_users`):**
+   Added `hashed_password` (`VARCHAR(255)`, nullable) and `role` (`VARCHAR(50)`, default `'alumnus'`) to `users` via batch alterations for secure alumni registration and safe role assignment.
